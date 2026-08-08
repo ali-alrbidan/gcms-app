@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+:root {
+  /* Civic-institutional palette: ink navy + brass, not the default cream/terracotta */
+  --ink: #17202B;        /* near-black navy — sidebar, headings */
+  --ink-2: #2B384A;       /* secondary navy — panels, hover */
+  --paper: #F4F5F3;       /* cool off-white background */
+  --surface: #FFFFFF;     /* card / table surface */
+  --line: #DCE0E3;        /* hairline borders */
+  --muted: #5B6672;       /* secondary text */
+  --brass: #A9782D;       /* primary accent — buttons, active state */
+  --brass-dark: #8A5F20;
+  --teal: #0E6E5B;        /* success / resolved */
+  --brick: #A33B2E;       /* danger / rejected */
+  --amber: #B8862B;       /* warning / in-progress */
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-line: var(--line);
+  --color-muted: var(--muted);
+  --color-brass: var(--brass);
+  --color-brass-dark: var(--brass-dark);
+  --color-teal: var(--teal);
+  --color-brick: var(--brick);
+  --color-amber: var(--amber);
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+}
+
+h1, h2, h3 {
+  font-family: Georgia, "Times New Roman", ui-serif, serif;
+}
