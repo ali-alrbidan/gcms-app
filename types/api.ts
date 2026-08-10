@@ -85,12 +85,10 @@ export interface SlaRule {
   is_active: boolean;
 }
 
-// Employee-side complaint types are best-guess placeholders until the
-// real endpoints/shape are confirmed. Marked clearly so they're easy to
-// find and adjust in lib/api.ts + app/employee/*.
+// Employee/Admin complaint types, matching the confirmed collection.
 export type ComplaintStatus =
   | "submitted"
-  | "in_review"
+  | "under_review"
   | "assigned"
   | "in_progress"
   | "resolved"
@@ -103,11 +101,50 @@ export interface Complaint {
   title: string;
   description: string;
   status: ComplaintStatus;
-  department?: Department;
-  category?: Category;
-  priority?: Priority;
-  citizen?: User;
-  assigned_to?: User | null;
+  department?: Department | null;
+  category?: Category | null;
+  priority?: Priority | null;
+  citizen?: User | null;
+  assigned_employee?: User | null;
   created_at: string;
   updated_at: string;
+  [key: string]: unknown;
 }
+
+export interface ClassificationRule {
+  id: string | number;
+  department_id: string | number;
+  category_id: string | number;
+  department?: Department;
+  category?: Category;
+  keyword: string;
+  weight: number;
+  is_active: boolean;
+  language?: string;
+  notes?: string | null;
+}
+
+export interface ClassificationPreviewResult {
+  suggested_department?: Department | null;
+  suggested_category?: Category | null;
+  scores?: Array<{ category_id: string | number; category_name?: string; score: number }>;
+  [key: string]: unknown;
+}
+
+export interface NotificationDeliveryLog {
+  id: string | number;
+  channel?: string;
+  status?: string;
+  recipient?: string;
+  created_at?: string;
+  [key: string]: unknown;
+}
+
+export interface ReportOverview {
+  total_complaints?: number;
+  open_complaints?: number;
+  resolved_complaints?: number;
+  overdue_complaints?: number;
+  [key: string]: unknown;
+}
+

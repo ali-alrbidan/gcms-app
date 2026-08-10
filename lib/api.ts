@@ -1,9 +1,15 @@
 import type {
   ApiResponse,
   Category,
+  ClassificationPreviewResult,
+  ClassificationRule,
+  Complaint,
+  ComplaintStatus,
   Department,
   LoginStartResponse,
+  NotificationDeliveryLog,
   Priority,
+  ReportOverview,
   SlaRule,
   User,
   VerifyOtpResponse,
@@ -30,11 +36,7 @@ export class ApiRequestError extends Error {
   status: number;
   errors?: Record<string, string[]>;
 
-  constructor(
-    message: string,
-    status: number,
-    errors?: Record<string, string[]>,
-  ) {
+  constructor(message: string, status: number, errors?: Record<string, string[]>) {
     super(message);
     this.name = "ApiRequestError";
     this.status = status;
@@ -46,10 +48,7 @@ interface RequestOptions extends RequestInit {
   auth?: boolean; // attach Bearer token, default true
 }
 
-async function request<T>(
-  path: string,
-  options: RequestOptions = {},
-): Promise<T> {
+async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { auth = true, headers, ...rest } = options;
 
   const finalHeaders: Record<string, string> = {
@@ -77,8 +76,7 @@ async function request<T>(
 
   if (!res.ok || !json || json.success === false) {
     const message =
-      (json && "message" in json && json.message) ||
-      `Request failed (${res.status})`;
+      (json && "message" in json && json.message) || `Request failed (${res.status})`;
     const errors = json && "errors" in json ? json.errors : undefined;
     throw new ApiRequestError(message, res.status, errors);
   }
@@ -113,6 +111,7 @@ export const authApi = {
     user_id: string | number;
     otp: string;
     purpose: "register" | "login";
+    device_name?: string;
   }) =>
     request<VerifyOtpResponse>("/auth/verify-otp", {
       method: "POST",
@@ -123,16 +122,26 @@ export const authApi = {
   me: () => request<{ user: User }>("/auth/me", { method: "GET" }),
 
   logout: () => request<null>("/auth/logout", { method: "POST" }),
+
+  logoutAll: () => request<null>("/auth/logout-all", { method: "POST" }),
+
+  changePassword: (payload: {
+    current_password: string;
+    password: string;
+    password_confirmation: string;
+  }) =>
+    request<null>("/auth/change-password", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 };
 
 // ---------- Role ping checks ----------
 
 export const roleApi = {
   adminPing: () => request<{ role: string }>("/admin/ping", { method: "GET" }),
-  employeePing: () =>
-    request<{ role: string }>("/employee/ping", { method: "GET" }),
-  citizenPing: () =>
-    request<{ role: string }>("/citizen/ping", { method: "GET" }),
+  employeePing: () => request<{ role: string }>("/employee/ping", { method: "GET" }),
+  citizenPing: () => request<{ role: string }>("/citizen/ping", { method: "GET" }),
 };
 
 // ---------- Public lookups ----------
@@ -146,7 +155,7 @@ export const lookupsApi = {
   categories: (departmentId?: string | number) =>
     request<{ categories: Category[] }>(
       `/lookups/categories${departmentId ? `?department_id=${departmentId}` : ""}`,
-      { method: "GET", auth: false },
+      { method: "GET", auth: false }
     ),
   priorities: () =>
     request<{ priorities: Priority[] }>("/lookups/priorities", {
@@ -165,12 +174,9 @@ export const lookupsApi = {
 export const adminDepartmentsApi = {
   list: (params: { per_page?: number; page?: number } = {}) => {
     const qs = new URLSearchParams(params as Record<string, string>).toString();
-    return request<{ departments: Department[] }>(
-      `/admin/departments${qs ? `?${qs}` : ""}`,
-      {
-        method: "GET",
-      },
-    );
+    return request<{ departments: Department[] }>(`/admin/departments${qs ? `?${qs}` : ""}`, {
+      method: "GET",
+    });
   },
   create: (payload: Partial<Department>) =>
     request<{ department: Department }>("/admin/departments", {
@@ -178,9 +184,7 @@ export const adminDepartmentsApi = {
       body: JSON.stringify(payload),
     }),
   show: (id: string | number) =>
-    request<{ department: Department }>(`/admin/departments/${id}`, {
-      method: "GET",
-    }),
+    request<{ department: Department }>(`/admin/departments/${id}`, { method: "GET" }),
   update: (id: string | number, payload: Partial<Department>) =>
     request<{ department: Department }>(`/admin/departments/${id}`, {
       method: "PUT",
@@ -195,12 +199,9 @@ export const adminDepartmentsApi = {
 export const adminCategoriesApi = {
   list: (params: { per_page?: number; page?: number } = {}) => {
     const qs = new URLSearchParams(params as Record<string, string>).toString();
-    return request<{ categories: Category[] }>(
-      `/admin/categories${qs ? `?${qs}` : ""}`,
-      {
-        method: "GET",
-      },
-    );
+    return request<{ categories: Category[] }>(`/admin/categories${qs ? `?${qs}` : ""}`, {
+      method: "GET",
+    });
   },
   create: (payload: Partial<Category>) =>
     request<{ category: Category }>("/admin/categories", {
@@ -208,9 +209,7 @@ export const adminCategoriesApi = {
       body: JSON.stringify(payload),
     }),
   show: (id: string | number) =>
-    request<{ category: Category }>(`/admin/categories/${id}`, {
-      method: "GET",
-    }),
+    request<{ category: Category }>(`/admin/categories/${id}`, { method: "GET" }),
   update: (id: string | number, payload: Partial<Category>) =>
     request<{ category: Category }>(`/admin/categories/${id}`, {
       method: "PUT",
@@ -225,12 +224,9 @@ export const adminCategoriesApi = {
 export const adminPrioritiesApi = {
   list: (params: { per_page?: number; page?: number } = {}) => {
     const qs = new URLSearchParams(params as Record<string, string>).toString();
-    return request<{ priorities: Priority[] }>(
-      `/admin/priorities${qs ? `?${qs}` : ""}`,
-      {
-        method: "GET",
-      },
-    );
+    return request<{ priorities: Priority[] }>(`/admin/priorities${qs ? `?${qs}` : ""}`, {
+      method: "GET",
+    });
   },
   create: (payload: Partial<Priority>) =>
     request<{ priority: Priority }>("/admin/priorities", {
@@ -238,9 +234,7 @@ export const adminPrioritiesApi = {
       body: JSON.stringify(payload),
     }),
   show: (id: string | number) =>
-    request<{ priority: Priority }>(`/admin/priorities/${id}`, {
-      method: "GET",
-    }),
+    request<{ priority: Priority }>(`/admin/priorities/${id}`, { method: "GET" }),
   update: (id: string | number, payload: Partial<Priority>) =>
     request<{ priority: Priority }>(`/admin/priorities/${id}`, {
       method: "PUT",
@@ -255,12 +249,9 @@ export const adminPrioritiesApi = {
 export const adminSlaRulesApi = {
   list: (params: { per_page?: number; page?: number } = {}) => {
     const qs = new URLSearchParams(params as Record<string, string>).toString();
-    return request<{ sla_rules: SlaRule[] }>(
-      `/admin/sla-rules${qs ? `?${qs}` : ""}`,
-      {
-        method: "GET",
-      },
-    );
+    return request<{ sla_rules: SlaRule[] }>(`/admin/sla-rules${qs ? `?${qs}` : ""}`, {
+      method: "GET",
+    });
   },
   create: (payload: Partial<SlaRule>) =>
     request<{ sla_rule: SlaRule }>("/admin/sla-rules", {
@@ -278,35 +269,135 @@ export const adminSlaRulesApi = {
     request<null>(`/admin/sla-rules/${id}`, { method: "DELETE" }),
 };
 
-// ---------- Employee: Complaints (PLACEHOLDER — routes not in the collection) ----------
-// These paths are best guesses following the same REST pattern as the admin
-// resources above. Update the paths once you confirm the real employee routes;
-// everything that calls this file (app/employee/*) will pick the change up
-// automatically.
+// ---------- Employee: Complaints ----------
 
 export const employeeComplaintsApi = {
-  list: (
-    params: { per_page?: number; page?: number; status?: string } = {},
-  ) => {
+  list: (params: { per_page?: number; page?: number; status?: string } = {}) => {
     const qs = new URLSearchParams(params as Record<string, string>).toString();
-    return request<{ complaints: unknown[] }>(
-      `/employee/complaints${qs ? `?${qs}` : ""}`,
-      {
-        method: "GET",
-      },
-    );
+    return request<{ complaints: Complaint[] }>(`/employee/complaints${qs ? `?${qs}` : ""}`, {
+      method: "GET",
+    });
   },
   show: (id: string | number) =>
-    request<{ complaint: unknown }>(`/employee/complaints/${id}`, {
+    request<{ complaint: Complaint }>(`/employee/complaints/${id}`, { method: "GET" }),
+  updateStatus: (id: string | number, payload: { status: ComplaintStatus; note?: string }) =>
+    request<{ complaint: Complaint }>(`/employee/complaints/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+};
+
+// ---------- Admin: Complaints ----------
+
+export const adminComplaintsApi = {
+  list: (params: { per_page?: number; page?: number; status?: string } = {}) => {
+    const qs = new URLSearchParams(params as Record<string, string>).toString();
+    return request<{ complaints: Complaint[] }>(`/admin/complaints${qs ? `?${qs}` : ""}`, {
+      method: "GET",
+    });
+  },
+  show: (id: string | number) =>
+    request<{ complaint: Complaint }>(`/admin/complaints/${id}`, { method: "GET" }),
+  assign: (id: string | number, payload: { employee_id: string | number; note?: string }) =>
+    request<{ complaint: Complaint }>(`/admin/complaints/${id}/assign`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  changeDepartment: (
+    id: string | number,
+    payload: { department_id: string | number; category_id?: string | number; note?: string }
+  ) =>
+    request<{ complaint: Complaint }>(`/admin/complaints/${id}/department`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  changePriority: (id: string | number, payload: { priority_id: string | number; note?: string }) =>
+    request<{ complaint: Complaint }>(`/admin/complaints/${id}/priority`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  updateStatus: (id: string | number, payload: { status: ComplaintStatus; note?: string }) =>
+    request<{ complaint: Complaint }>(`/admin/complaints/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+};
+
+// ---------- Admin: Reports ----------
+
+export const reportsApi = {
+  overview: () => request<ReportOverview>("/admin/reports/overview", { method: "GET" }),
+  complaintsByStatus: () =>
+    request<Record<string, number> | unknown[]>("/admin/reports/complaints-by-status", {
       method: "GET",
     }),
-  updateStatus: (
-    id: string | number,
-    payload: { status: string; note?: string },
-  ) =>
-    request<{ complaint: unknown }>(`/employee/complaints/${id}/status`, {
+  complaintsByDepartment: () =>
+    request<unknown[]>("/admin/reports/complaints-by-department", { method: "GET" }),
+  complaintsByPriority: () =>
+    request<unknown[]>("/admin/reports/complaints-by-priority", { method: "GET" }),
+  slaPerformance: () => request<unknown>("/admin/reports/sla-performance", { method: "GET" }),
+  employeePerformance: () =>
+    request<unknown[]>("/admin/reports/employee-performance", { method: "GET" }),
+  complaintTrends: (params: { date_from?: string; date_to?: string; group_by?: string } = {}) => {
+    const qs = new URLSearchParams(params as Record<string, string>).toString();
+    return request<unknown[]>(`/admin/reports/complaint-trends${qs ? `?${qs}` : ""}`, {
+      method: "GET",
+    });
+  },
+  slaBreaches: (params: { per_page?: number; page?: number } = {}) => {
+    const qs = new URLSearchParams(params as Record<string, string>).toString();
+    return request<{ data: unknown[] } | unknown[]>(`/admin/reports/sla-breaches${qs ? `?${qs}` : ""}`, {
+      method: "GET",
+    });
+  },
+};
+
+// ---------- Classification Management ----------
+
+export const classificationApi = {
+  preview: (payload: { title: string; description: string }) =>
+    request<ClassificationPreviewResult>("/classification/complaints/preview", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  listRules: (params: { per_page?: number; page?: number } = {}) => {
+    const qs = new URLSearchParams(params as Record<string, string>).toString();
+    return request<{ classification_rules: ClassificationRule[] }>(
+      `/admin/classification-rules${qs ? `?${qs}` : ""}`,
+      { method: "GET" }
+    );
+  },
+  createRule: (payload: Partial<ClassificationRule>) =>
+    request<{ classification_rule: ClassificationRule }>("/admin/classification-rules", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  showRule: (id: string | number) =>
+    request<{ classification_rule: ClassificationRule }>(`/admin/classification-rules/${id}`, {
+      method: "GET",
+    }),
+  updateRule: (id: string | number, payload: Partial<ClassificationRule>) =>
+    request<{ classification_rule: ClassificationRule }>(`/admin/classification-rules/${id}`, {
       method: "PUT",
       body: JSON.stringify(payload),
+    }),
+  removeRule: (id: string | number) =>
+    request<null>(`/admin/classification-rules/${id}`, { method: "DELETE" }),
+};
+
+// ---------- Notification Admin ----------
+
+export const notificationAdminApi = {
+  listDeliveryLogs: (params: { per_page?: number; page?: number } = {}) => {
+    const qs = new URLSearchParams(params as Record<string, string>).toString();
+    return request<{ delivery_logs: NotificationDeliveryLog[] }>(
+      `/admin/notification-delivery-logs${qs ? `?${qs}` : ""}`,
+      { method: "GET" }
+    );
+  },
+  showDeliveryLog: (id: string | number) =>
+    request<{ delivery_log: NotificationDeliveryLog }>(`/admin/notification-delivery-logs/${id}`, {
+      method: "GET",
     }),
 };
 

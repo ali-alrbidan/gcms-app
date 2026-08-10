@@ -2,13 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useAuth } from "@/lib/auth-context";
-import { employeeComplaintsApi, ApiError } from "@/lib/api";
+import { adminComplaintsApi, ApiError } from "@/lib/api";
 import type { Complaint } from "@/types/api";
 import { StatusBadge, ALL_STATUSES, statusLabel } from "@/components/status-badge";
 
-export default function EmployeeDashboard() {
-  const { user } = useAuth();
+export default function AdminComplaintsPage() {
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +16,7 @@ export default function EmployeeDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const { complaints } = await employeeComplaintsApi.list({
+      const { complaints } = await adminComplaintsApi.list({
         per_page: 50,
         ...(statusFilter ? { status: statusFilter } : {}),
       });
@@ -39,10 +37,8 @@ export default function EmployeeDashboard() {
     <div>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-ink">
-            مرحبًا، {user?.name?.split(" ")[0]}
-          </h1>
-          <p className="mt-1 text-sm text-muted">الشكاوى المتاحة لك للمتابعة.</p>
+          <h1 className="text-2xl font-semibold text-ink">كل الشكاوى</h1>
+          <p className="mt-1 text-sm text-muted">إدارة وإسناد وتصنيف الشكاوى الواردة.</p>
         </div>
         <select
           className="rounded-md border border-line bg-white px-3 py-2 text-sm text-ink outline-none focus:border-brass"
@@ -64,7 +60,7 @@ export default function EmployeeDashboard() {
         ) : error ? (
           <p className="p-6 text-sm text-brick">{error}</p>
         ) : complaints.length === 0 ? (
-          <p className="p-6 text-sm text-muted">لا توجد شكاوى مسندة إليك حاليًا.</p>
+          <p className="p-6 text-sm text-muted">لا توجد شكاوى حاليًا.</p>
         ) : (
           <table className="w-full text-left text-sm">
             <thead className="border-b border-line bg-paper text-xs uppercase tracking-wide text-muted">
@@ -72,6 +68,7 @@ export default function EmployeeDashboard() {
                 <th className="px-4 py-3 font-medium">العنوان</th>
                 <th className="px-4 py-3 font-medium">القسم</th>
                 <th className="px-4 py-3 font-medium">الأولوية</th>
+                <th className="px-4 py-3 font-medium">المسؤول</th>
                 <th className="px-4 py-3 font-medium">الحالة</th>
                 <th className="px-4 py-3 font-medium">تاريخ الإنشاء</th>
               </tr>
@@ -81,7 +78,7 @@ export default function EmployeeDashboard() {
                 <tr key={c.id} className="border-b border-line last:border-0 hover:bg-paper">
                   <td className="px-4 py-3">
                     <Link
-                      href={`/employee/complaints/${c.id}`}
+                      href={`/admin/complaints/${c.id}`}
                       className="font-medium text-ink hover:text-brass hover:underline"
                     >
                       {c.title}
@@ -89,6 +86,7 @@ export default function EmployeeDashboard() {
                   </td>
                   <td className="px-4 py-3 text-muted">{c.department?.name ?? "—"}</td>
                   <td className="px-4 py-3 text-muted">{c.priority?.name ?? "—"}</td>
+                  <td className="px-4 py-3 text-muted">{c.assigned_employee?.name ?? "غير مسندة"}</td>
                   <td className="px-4 py-3">
                     <StatusBadge status={c.status} />
                   </td>

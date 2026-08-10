@@ -56,7 +56,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const completeLogin = useCallback(async (userId: string | number, otp: string) => {
-    const data = await authApi.verifyOtp({ user_id: userId, otp, purpose: "login" });
+    const data = await authApi.verifyOtp({
+      user_id: userId,
+      otp,
+      purpose: "login",
+      device_name: "GCMS Web",
+    });
     setToken(data.token);
     setUser(data.user);
     return data.user;
