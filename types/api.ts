@@ -11,6 +11,18 @@ export interface User {
   [key: string]: unknown;
 }
 
+export interface Employee {
+  id: string | number;
+  name: string;
+  email: string;
+  phone?: string | null;
+  national_id?: string | null;
+  role: "employee";
+  department?: { id: string | number; name: string; code: string } | null;
+  is_active: boolean;
+  phone_verified_at?: string | null;
+  last_login_at?: string | null;
+}
 export interface ApiSuccess<T> {
   success: true;
   message?: string;
@@ -127,7 +139,11 @@ export interface ClassificationRule {
 export interface ClassificationPreviewResult {
   suggested_department?: Department | null;
   suggested_category?: Category | null;
-  scores?: Array<{ category_id: string | number; category_name?: string; score: number }>;
+  scores?: Array<{
+    category_id: string | number;
+    category_name?: string;
+    score: number;
+  }>;
   [key: string]: unknown;
 }
 
@@ -147,4 +163,3 @@ export interface ReportOverview {
   overdue_complaints?: number;
   [key: string]: unknown;
 }
-

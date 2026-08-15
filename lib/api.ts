@@ -411,6 +411,7 @@ import type {
   Complaint,
   ComplaintStatus,
   Department,
+  Employee,
   LoginStartResponse,
   NotificationDeliveryLog,
   Priority,
@@ -731,6 +732,36 @@ export const adminSlaRulesApi = {
     request<null>(`/admin/sla-rules/${id}`, { method: "DELETE" }),
 };
 
+// ---------- Admin: Employees ----------
+
+export const adminEmployeesApi = {
+  list: (
+    params: {
+      search?: string;
+      department_id?: string | number;
+      is_active?: boolean;
+      page?: number;
+      per_page?: number;
+    } = {},
+  ) => {
+    const query: Record<string, string> = {};
+    if (params.search) query.search = params.search;
+    if (params.department_id !== undefined)
+      query.department_id = String(params.department_id);
+    if (params.is_active !== undefined)
+      query.is_active = String(params.is_active);
+    if (params.page) query.page = String(params.page);
+    if (params.per_page) query.per_page = String(params.per_page);
+    const qs = new URLSearchParams(query).toString();
+    return request<{ employees: Employee[] }>(
+      `/admin/employees${qs ? `?${qs}` : ""}`,
+      {
+        method: "GET",
+      },
+    );
+  },
+};
+
 // ---------- Employee: Complaints ----------
 // NOTE: /admin/complaints/{id} confirmed to return the complaint object
 // directly as `data` (no "complaint" wrapper key). We apply the same
@@ -788,9 +819,20 @@ export const adminComplaintsApi = {
     });
     return { complaint: unwrap<Complaint>(raw, "complaint") };
   },
+  // assign: async (
+  //   id: string | number,
+  //   payload: { employee_id: string | number; note?: string },
+  // ) => {
+  //   const raw = await request<unknown>(`/admin/complaints/${id}/assign`, {
+  //     method: "PATCH",
+  //     body: JSON.stringify(payload),
+  //   });
+  //   return { complaint: unwrap<Complaint>(raw, "complaint") };
+  // },
+
   assign: async (
     id: string | number,
-    payload: { employee_id: string | number; note?: string },
+    payload: { assigned_employee_id: string | number; note?: string },
   ) => {
     const raw = await request<unknown>(`/admin/complaints/${id}/assign`, {
       method: "PATCH",
