@@ -311,8 +311,9 @@
 
 import { useEffect, useState, use as usePromise } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { employeeComplaintsApi, ApiError } from "@/lib/api";
-import type { Complaint, ComplaintStatus } from "@/types/api";
+import type { Complaint, ComplaintStatus, Attachment } from "@/types/api";
 import {
   StatusBadge,
   ALL_STATUSES,
@@ -321,6 +322,17 @@ import {
 import { inputClass, primaryButtonClass } from "@/components/form-field";
 import { useLocale } from "@/lib/locale-context";
 import { ComplaintInformationRequest } from "@/components/complaint-information-request";
+
+function isImageAttachment(attachment: Attachment): boolean {
+  const mime = attachment.mime_type?.toLowerCase() ?? "";
+  if (mime.startsWith("image/")) return true;
+  const name = (
+    attachment.file_name ||
+    attachment.original_name ||
+    ""
+  ).toLowerCase();
+  return /\.(jpe?g|png|gif|webp|avif|bmp|svg)$/.test(name);
+}
 
 export default function EmployeeComplaintDetail({
   params,
@@ -339,6 +351,18 @@ export default function EmployeeComplaintDetail({
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewName, setPreviewName] = useState("");
+
+  useEffect(() => {
+    if (!previewUrl) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setPreviewUrl(null);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [previewUrl]);
 
   async function load() {
     setLoading(true);
@@ -680,21 +704,57 @@ export default function EmployeeComplaintDetail({
           <p className="text-xs uppercase tracking-wide text-muted">
             {t("complaintDetail.attachments")} ({complaint.attachments.length})
           </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {complaint.attachments.map((attachment, index) => (
-              <a
-                key={index}
-                href={attachment.url || "#"}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-sm text-primary transition-colors hover:bg-primary/20"
-              >
-                <span>📎</span>
-                {attachment.original_name ||
-                  attachment.file_name ||
-                  `${t("complaintDetail.attachment")} ${index + 1}`}
-              </a>
-            ))}
+          <div className="mt-3 flex flex-wrap gap-3">
+            {complaint.attachments.map((attachment, index) =>
+              attachment.url && isImageAttachment(attachment) ? (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => {
+                    setPreviewName(
+                      attachment.original_name ||
+                        attachment.file_name ||
+                        `${t("complaintDetail.attachment")} ${index + 1}`,
+                    );
+                    setPreviewUrl(attachment.url as string);
+                  }}
+                  className="group relative overflow-hidden rounded-lg border border-line bg-paper transition-colors hover:border-primary"
+                  title={t("complaintDetail.viewAttachment")}
+                >
+                  <div className="relative h-24 w-24 sm:h-28 sm:w-28">
+                    <Image
+                      src={attachment.url as string}
+                      alt={
+                        attachment.original_name ||
+                        attachment.file_name ||
+                        `${t("complaintDetail.attachment")} ${index + 1}`
+                      }
+                      fill
+                      sizes="(max-width: 640px) 96px, 112px"
+                      className="object-cover transition-transform duration-200 group-hover:scale-105"
+                      unoptimized={
+                        (attachment.url as string).toLowerCase().endsWith(
+                          ".svg",
+                        ) || attachment.mime_type?.toLowerCase() === "image/svg+xml"
+                      }
+                    />
+                  </div>
+                </button>
+              ) : (
+                <a
+                  key={index}
+                  href={attachment.url || "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-sm text-primary transition-colors hover:bg-primary/20"
+                >
+                  <span>📎</span>
+                  {attachment.original_name ||
+                    attachment.file_name ||
+                    `${t("complaintDetail.attachment")} ${index + 1}`}
+                </a>
+              ),
+            )}
           </div>
         </div>
       )}
@@ -950,6 +1010,47 @@ export default function EmployeeComplaintDetail({
               </p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Image preview lightbox */}
+      {previewUrl && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/85 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setPreviewUrl(null);
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setPreviewUrl(null)}
+            aria-label={t("common.close")}
+            className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/25"
+          >
+            ✕
+          </button>
+          <p className="mb-3 max-w-[80vw] truncate text-sm text-white/90">
+            {previewName}
+          </p>
+          <div className="relative h-[80vh] w-[80vw]">
+            <Image
+              src={previewUrl}
+              alt={previewName}
+              fill
+              sizes="80vw"
+              className="object-contain"
+              unoptimized={previewUrl.toLowerCase().endsWith(".svg")}
+            />
+          </div>
+          <a
+            href={previewUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="mt-3 text-sm text-white/80 underline transition-colors hover:text-white"
+          >
+            {t("complaintDetail.openOriginal")}
+          </a>
         </div>
       )}
     </div>

@@ -2535,10 +2535,16 @@ export default function AdminComplaintDetail({
 
   async function onSubmitAssign(e: React.FormEvent) {
     e.preventDefault();
-    if (!assignedEmployeeId) return;
+    if (!assignedEmployeeId || !complaint) return;
     setSaving(true);
     setActionError(null);
     try {
+      if (complaint.status === "submitted") {
+        await adminComplaintsApi.updateStatus(id, {
+          status: "under_review",
+          note: note || undefined,
+        });
+      }
       await adminComplaintsApi.assign(id, {
         assigned_employee_id: assignedEmployeeId,
         note: note || undefined,
@@ -2637,6 +2643,10 @@ export default function AdminComplaintDetail({
   if (!complaint) return null;
 
   const currentStep = STATUS_PIPELINE[complaint.status]?.step ?? 0;
+
+  const isTerminalStatus = ["resolved", "closed", "rejected"].includes(
+    complaint.status,
+  );
 
   return (
     <div className="space-y-6">
@@ -2873,17 +2883,37 @@ export default function AdminComplaintDetail({
         <div className="p-6">
           <div className="flex flex-wrap gap-3">
             {[
-              { key: "status", label: t("complaintDetail.updateStatusBtn") },
-              { key: "assign", label: t("complaintDetail.assignBtn") },
-              { key: "department", label: t("complaintDetail.changeDeptBtn") },
+              {
+                key: "status",
+                label: t("complaintDetail.updateStatusBtn"),
+                disabled: false,
+              },
+              {
+                key: "assign",
+                label: t("complaintDetail.assignBtn"),
+                disabled: isTerminalStatus,
+              },
+              {
+                key: "department",
+                label: t("complaintDetail.changeDeptBtn"),
+                disabled: false,
+              },
               {
                 key: "priority",
                 label: t("complaintDetail.changePriorityBtn"),
+                disabled: false,
               },
             ].map((btn) => (
               <button
                 key={btn.key}
+                disabled={btn.disabled}
+                title={
+                  btn.disabled
+                    ? t("complaintDetail.assignNotAllowed")
+                    : undefined
+                }
                 onClick={() => {
+                  if (btn.disabled) return;
                   setActiveAction(btn.key as typeof activeAction);
                   setActionError(null);
                   setSuccessMessage(null);
@@ -2892,9 +2922,11 @@ export default function AdminComplaintDetail({
                   }
                 }}
                 className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-                  activeAction === btn.key
-                    ? "bg-indigo-600 text-white shadow-md hover:bg-indigo-700"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  btn.disabled
+                    ? "cursor-not-allowed bg-gray-100 text-gray-400"
+                    : activeAction === btn.key
+                      ? "bg-indigo-600 text-white shadow-md hover:bg-indigo-700"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
                 {btn.label}
