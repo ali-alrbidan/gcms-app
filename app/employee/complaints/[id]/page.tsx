@@ -9,6 +9,7 @@ import { StatusBadge, useStatusLabel } from "@/components/status-badge";
 import { inputClass, primaryButtonClass } from "@/components/form-field";
 import { useLocale } from "@/lib/locale-context";
 import { ComplaintInformationRequest } from "@/components/complaint-information-request";
+import { Skeleton } from "@/components/ui-feedback";
 
 function isImageAttachment(attachment: Attachment): boolean {
   const mime = attachment.mime_type?.toLowerCase() ?? "";
@@ -131,6 +132,99 @@ function InfoTile({
         <span className="truncate">{value}</span>
       </p>
       {sub && <p className="mt-0.5 text-xs text-muted">{sub}</p>}
+    </div>
+  );
+}
+
+function ComplaintDetailSkeleton() {
+  return (
+    <div className="mx-auto w-full max-w-6xl">
+      <Skeleton className="h-4 w-40" />
+
+      {/* Hero */}
+      <div className="mt-4 overflow-hidden rounded-2xl bg-ink/10">
+        <div className="p-6">
+          <Skeleton className="h-3 w-32" />
+          <Skeleton className="mt-3 h-8 w-3/4 max-w-md" />
+          <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
+            <Skeleton className="h-4 w-48" />
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-4 w-44" />
+          </div>
+        </div>
+      </div>
+
+      {/* Key info tiles */}
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {[0, 1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="rounded-xl border border-line bg-surface p-4"
+          >
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="mt-2 h-4 w-24" />
+          </div>
+        ))}
+      </div>
+
+      {/* Description */}
+      <div className="mt-4 rounded-2xl border border-line bg-surface p-5">
+        <Skeleton className="h-4 w-28" />
+        <Skeleton className="mt-3 h-4 w-full" />
+        <Skeleton className="mt-2 h-4 w-full" />
+        <Skeleton className="mt-2 h-4 w-2/3" />
+      </div>
+
+      {/* Location + Classification */}
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="rounded-2xl border border-line bg-surface p-5">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="mt-3 h-4 w-3/4" />
+          <Skeleton className="mt-2 h-4 w-1/2" />
+        </div>
+        <div className="rounded-2xl border border-line bg-surface p-5">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="mt-3 h-2.5 w-full rounded-full" />
+          <Skeleton className="mt-2 h-4 w-40" />
+        </div>
+      </div>
+
+      {/* Attachments */}
+      <div className="mt-4 rounded-2xl border border-line bg-surface p-5">
+        <Skeleton className="h-4 w-28" />
+        <div className="mt-3 flex gap-3">
+          <Skeleton className="h-24 w-28" />
+          <Skeleton className="h-24 w-28" />
+          <Skeleton className="h-24 w-28" />
+        </div>
+      </div>
+
+      {/* Timeline */}
+      <div className="mt-4 rounded-2xl border border-line bg-surface p-5">
+        <Skeleton className="h-4 w-36" />
+        <div className="mt-4 space-y-5">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="flex gap-4">
+              <Skeleton className="mt-1 h-4 w-4 rounded-full" />
+              <div className="flex-1 rounded-xl border border-line bg-paper p-4">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="mt-2 h-3 w-48" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Update status */}
+      <div className="mt-4 rounded-2xl border border-line bg-surface p-5">
+        <Skeleton className="h-4 w-28" />
+        <Skeleton className="mt-3 h-3 w-2/3" />
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-10 rounded-xl" />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -278,12 +372,7 @@ export default function EmployeeComplaintDetail({
   };
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 text-muted">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-line border-t-primary" />
-        <p className="mt-4 text-sm">{t("complaintDetail.loadingComplaint")}</p>
-      </div>
-    );
+    return <ComplaintDetailSkeleton />;
   }
 
   if (error) {
