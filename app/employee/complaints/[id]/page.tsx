@@ -759,36 +759,6 @@ export default function EmployeeComplaintDetail({
         </div>
       )}
 
-      {/* Assigned Employee Info */}
-      {complaint.assigned_employee && (
-        <div className="mt-4 rounded-lg border border-line bg-surface p-5">
-          <p className="text-xs uppercase tracking-wide text-muted">
-            {t("complaintDetail.assignedTo")}
-          </p>
-          <div className="mt-2 flex flex-wrap items-center gap-x-6 gap-y-1">
-            <p className="text-sm font-medium text-ink">
-              {complaint.assigned_employee.name}
-            </p>
-            {complaint.assigned_employee.email && (
-              <a
-                href={`mailto:${complaint.assigned_employee.email}`}
-                className="text-sm text-primary hover:underline"
-              >
-                📧 {complaint.assigned_employee.email}
-              </a>
-            )}
-            {complaint.assigned_employee.phone && (
-              <a
-                href={`tel:${complaint.assigned_employee.phone}`}
-                className="text-sm text-primary hover:underline"
-              >
-                📞 {complaint.assigned_employee.phone}
-              </a>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* Citizen Info */}
       {complaint.citizen && (
         <div className="mt-4 rounded-lg border border-line bg-surface p-5">
