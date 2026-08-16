@@ -403,6 +403,7 @@
 
 // export { ApiRequestError as ApiError };
 
+import type { Locale } from "@/lib/i18n";
 import type {
   ApiResponse,
   Category,
@@ -428,6 +429,12 @@ const TOKEN_KEY = "gcms_token";
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return window.localStorage.getItem(TOKEN_KEY);
+}
+// أضف هذه الدالة بجانب getToken/setToken
+function getLocale(): Locale {
+  if (typeof window === "undefined") return "ar";
+  const stored = window.localStorage.getItem("gcms_locale");
+  return stored === "en" ? "en" : "ar";
 }
 
 export function setToken(token: string) {
@@ -467,6 +474,7 @@ async function request<T>(
   const finalHeaders: Record<string, string> = {
     Accept: "application/json",
     "Content-Type": "application/json",
+    "Accept-Language": getLocale(),
     ...(headers as Record<string, string>),
   };
 
@@ -984,5 +992,73 @@ export const notificationAdminApi = {
       },
     ),
 };
+// ---------- Admin: User Management ----------
 
+export const adminUsersApi = {
+  list: (
+    params: {
+      search?: string;
+      role?: "citizen" | "employee" | "admin";
+      department_id?: string | number;
+      is_active?: boolean;
+      page?: number;
+      per_page?: number;
+    } = {},
+  ) => {
+    const query: Record<string, string> = {};
+    if (params.search) query.search = params.search;
+    if (params.role) query.role = params.role;
+    if (params.department_id !== undefined)
+      query.department_id = String(params.department_id);
+    if (params.is_active !== undefined)
+      query.is_active = String(params.is_active);
+    if (params.page) query.page = String(params.page);
+    if (params.per_page) query.per_page = String(params.per_page);
+    const qs = new URLSearchParams(query).toString();
+    return request<{ users: User[] }>(`/admin/users${qs ? `?${qs}` : ""}`, {
+      method: "GET",
+    });
+  },
+
+  create: (payload: {
+    name: string;
+    email: string;
+    phone: string;
+    national_id?: string;
+    password: string;
+    password_confirmation: string;
+    role: "citizen" | "employee" | "admin";
+    department_id?: string | number;
+    is_active?: boolean;
+  }) =>
+    request<{ user: User }>("/admin/users", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  show: (id: string | number) =>
+    request<{ user: User }>(`/admin/users/${id}`, { method: "GET" }),
+
+  update: (
+    id: string | number,
+    payload: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      national_id?: string;
+      role?: "citizen" | "employee" | "admin";
+      department_id?: string | number | null;
+    },
+  ) =>
+    request<{ user: User }>(`/admin/users/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+
+  updateStatus: (id: string | number, payload: { is_active: boolean }) =>
+    request<{ user: User }>(`/admin/users/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+};
 export { ApiRequestError as ApiError };

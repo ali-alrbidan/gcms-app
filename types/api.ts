@@ -1,13 +1,17 @@
 // Shared API types for the Government Complaints Management System
 
 export type UserRole = "citizen" | "employee" | "admin";
-
 export interface User {
   id: string | number;
   name: string;
   email: string;
   phone?: string;
+  national_id?: string | null;
   role: UserRole;
+  department?: { id: string | number; name: string; code: string } | null;
+  is_active?: boolean;
+  phone_verified_at?: string | null;
+  last_login_at?: string | null;
   [key: string]: unknown;
 }
 
