@@ -505,10 +505,16 @@ async function fetchJson<T>(
   }
 
   if (!res.ok || !json || json.success === false) {
+    const errors = json && "errors" in json ? json.errors : undefined;
+    const firstError = errors
+      ? Object.values(errors)
+          .flat()
+          .find(Boolean)
+      : undefined;
     const message =
+      firstError ||
       (json && "message" in json && json.message) ||
       `Request failed (${res.status})`;
-    const errors = json && "errors" in json ? json.errors : undefined;
     throw new ApiRequestError(message, res.status, errors);
   }
 

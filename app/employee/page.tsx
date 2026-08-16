@@ -108,7 +108,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { employeeComplaintsApi, ApiError } from "@/lib/api";
 import type { Complaint } from "@/types/api";
@@ -123,6 +123,7 @@ export default function EmployeeDashboard() {
   const { user } = useAuth();
   const { t } = useLocale();
   const statusLabel = useStatusLabel();
+  const router = useRouter();
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -244,16 +245,21 @@ export default function EmployeeDashboard() {
                 {complaints.map((c) => (
                   <tr
                     key={c.id}
-                    className="border-b border-line last:border-0 hover:bg-paper"
+                    role="link"
+                    tabIndex={0}
+                    onClick={() => router.push(`/employee/complaints/${c.id}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        router.push(`/employee/complaints/${c.id}`);
+                      }
+                    }}
+                    className="group cursor-pointer border-b border-line text-left transition-colors last:border-0 hover:bg-paper focus:outline-none focus-visible:bg-paper focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
                   >
                     <td className="px-4 py-3">
                       <div className="flex flex-col">
-                        <Link
-                          href={`/employee/complaints/${c.id}`}
-                          className="font-medium text-ink hover:text-brass hover:underline"
-                        >
+                        <span className="font-medium text-ink transition-colors group-hover:text-brass">
                           {c.title}
-                        </Link>
+                        </span>
                         {c.complaint_number && (
                           <span className="text-xs text-muted">
                             #{c.complaint_number}
