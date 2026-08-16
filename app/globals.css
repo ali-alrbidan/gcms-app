@@ -26,6 +26,7 @@
   --color-surface: var(--surface);
   --color-line: var(--line);
   --color-muted: var(--muted);
+  --color-primary: var(--brass);
   --color-brass: var(--brass);
   --color-brass-dark: var(--brass-dark);
   --color-teal: var(--teal);
