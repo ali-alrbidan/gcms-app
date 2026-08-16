@@ -137,6 +137,7 @@ export function DashboardShell({
       <aside className="flex w-60 shrink-0 flex-col justify-between bg-ink text-white h-screen sticky top-0 overflow-y-auto">
         <div>
           <div className="border-b border-white/10 px-5 py-5">
+            <img src="/logo-white.png" alt="Balagh Logo" className="h-10 w-auto mb-3" />
             <p className="text-xs uppercase tracking-[0.2em] text-brass">
               GCMS
             </p>

@@ -102,7 +102,7 @@ import { Suspense, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useLocale } from "@/lib/locale-context";
-import { ApiError } from "@/lib/api";
+import { ApiError, authApi } from "@/lib/api";
 
 function VerifyOtpForm() {
   const router = useRouter();
@@ -114,6 +114,8 @@ function VerifyOtpForm() {
   const [otp, setOtp] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -134,6 +136,25 @@ function VerifyOtpForm() {
       );
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function onResend() {
+    if (!userId || resending) return;
+    setResending(true);
+    setResendMessage(null);
+    setError(null);
+    try {
+      await authApi.resendOtp({ user_id: userId, purpose: "login" });
+      setResendMessage(t("verifyOtp.resendSuccess"));
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : t("verifyOtp.resendError"),
+      );
+    } finally {
+      setResending(false);
     }
   }
 
@@ -180,21 +201,40 @@ function VerifyOtpForm() {
             </p>
           )}
 
+          {resendMessage && (
+            <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+              ✓ {resendMessage}
+            </p>
+          )}
+
           <button
             type="submit"
-            disabled={submitting || !userId}
+            disabled={submitting || resending || !userId}
             className="w-full rounded-md bg-ink px-4 py-2 text-sm font-medium text-white transition hover:bg-ink-2 disabled:opacity-50"
           >
             {submitting ? t("verifyOtp.verifying") : t("verifyOtp.verify")}
           </button>
 
-          <button
-            type="button"
-            onClick={() => router.push("/login")}
-            className="w-full text-center text-sm text-muted hover:text-ink"
-          >
-            {t("verifyOtp.useAnother")}
-          </button>
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              disabled={resending || !userId}
+              onClick={onResend}
+              className="text-center text-sm text-muted hover:text-ink disabled:opacity-50"
+            >
+              {resending
+                ? t("verifyOtp.resending")
+                : t("verifyOtp.resend")}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => router.push("/login")}
+              className="text-center text-sm text-muted hover:text-ink"
+            >
+              {t("verifyOtp.useAnother")}
+            </button>
+          </div>
         </form>
       </div>
     </main>

@@ -320,6 +320,7 @@ import {
 } from "@/components/status-badge";
 import { inputClass, primaryButtonClass } from "@/components/form-field";
 import { useLocale } from "@/lib/locale-context";
+import { ComplaintInformationRequest } from "@/components/complaint-information-request";
 
 export default function EmployeeComplaintDetail({
   params,
@@ -344,7 +345,7 @@ export default function EmployeeComplaintDetail({
     setError(null);
     try {
       const { complaint } = await employeeComplaintsApi.show(id);
-      console.log(complaint);
+      console.log("Loaded complaint:", complaint);
       setComplaint(complaint);
       setNewStatus(complaint.status);
     } catch (err) {
@@ -388,19 +389,27 @@ export default function EmployeeComplaintDetail({
     }
   }
 
+  async function onRequestInfo(message: string) {
+    await employeeComplaintsApi.updateStatus(id, {
+      status: "waiting_citizen",
+      note: message,
+    });
+    await load();
+  }
+
   if (loading)
     return <p className="text-sm text-muted">{t("common.loading")}</p>;
   if (error) return <p className="text-sm text-brick">{error}</p>;
   if (!complaint) return null;
 
   // Helper function to format date
-  const formatDate = (date: string) => {
+  const formatDate = (date: string | null | undefined) => {
     if (!date) return "—";
     return new Date(date).toLocaleString();
   };
 
   // Helper function to format duration
-  const formatDuration = (minutes: number | null) => {
+  const formatDuration = (minutes: number | null | undefined) => {
     if (!minutes) return null;
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
@@ -421,6 +430,10 @@ export default function EmployeeComplaintDetail({
         return "bg-purple-500";
       case "in_progress":
         return "bg-indigo-500";
+      case "waiting_citizen":
+        return "bg-purple-600";
+      case "escalated":
+        return "bg-orange-500";
       case "resolved":
         return "bg-green-500";
       case "closed":
@@ -430,6 +443,40 @@ export default function EmployeeComplaintDetail({
       default:
         return "bg-gray-400";
     }
+  };
+
+  // Get valid status transitions for EMPLOYEE (backend-enforced).
+  // Backend UpdateComplaintStatusRequest only accepts:
+  //   under_review | in_progress | waiting_citizen | resolved | escalated
+  // So `assigned`, `rejected` and `closed` are never offered (they 422).
+  // `in_progress` from `under_review` triggers the backend's self-assign
+  // acquisition for unassigned complaints.
+  const getValidStatusTransitions = (
+    currentStatus: ComplaintStatus,
+  ): ComplaintStatus[] => {
+    const transitions: Record<ComplaintStatus, ComplaintStatus[]> = {
+      submitted: ["under_review"],
+      under_review: ["in_progress", "escalated"],
+      assigned: ["in_progress", "escalated"],
+      in_progress: ["waiting_citizen", "resolved", "escalated"],
+      waiting_citizen: ["in_progress", "resolved"],
+      resolved: [],
+      closed: [],
+      rejected: [],
+      escalated: ["in_progress", "resolved"],
+    };
+    return transitions[currentStatus] || [];
+  };
+
+  // Check if status is terminal (no further transitions allowed)
+  const isTerminalStatus = (status: ComplaintStatus): boolean => {
+    return status === "closed" || status === "rejected";
+  };
+
+  // Check if note is required for status transition
+  // (backend: note is required only when status === waiting_citizen)
+  const isNoteRequired = (toStatus: ComplaintStatus): boolean => {
+    return toStatus === "waiting_citizen";
   };
 
   return (
@@ -452,7 +499,7 @@ export default function EmployeeComplaintDetail({
             </p>
             <span className="text-line">•</span>
             <p className="text-muted">
-              {t("common.createdAt")}: {formatDate(complaint.created_at)}
+              {t("complaintDetail.createdAt")}: {formatDate(complaint.created_at)}
             </p>
             {complaint.client_ref && (
               <>
@@ -502,7 +549,7 @@ export default function EmployeeComplaintDetail({
           <div className="mt-1 flex items-center gap-2">
             <span
               className="inline-block h-3 w-3 rounded-full"
-              style={{ backgroundColor: complaint.priority?.color || "#gray" }}
+              style={{ backgroundColor: complaint.priority?.color || "#6b7280" }}
             />
             <p className="text-sm font-medium text-ink">
               {complaint.priority?.name ?? "—"}
@@ -601,16 +648,13 @@ export default function EmployeeComplaintDetail({
                   <div
                     className="h-2 rounded-full bg-primary transition-all duration-500"
                     style={{
-                      width: `${Math.round(parseFloat(complaint.classification_confidence) * 100)}%`,
+                      width: `${Math.min(100, Number(complaint.classification_confidence))}%`,
                     }}
                   />
                 </div>
               </div>
               <p className="text-sm font-medium text-ink">
-                {Math.round(
-                  parseFloat(complaint.classification_confidence) * 100,
-                )}
-                %
+                {Math.round(Number(complaint.classification_confidence))}%
               </p>
             </div>
             {complaint.classification && (
@@ -646,7 +690,8 @@ export default function EmployeeComplaintDetail({
                 className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-sm text-primary transition-colors hover:bg-primary/20"
               >
                 <span>📎</span>
-                {attachment.name ||
+                {attachment.original_name ||
+                  attachment.file_name ||
                   `${t("complaintDetail.attachment")} ${index + 1}`}
               </a>
             ))}
@@ -738,7 +783,7 @@ export default function EmployeeComplaintDetail({
                     <p className="text-sm font-medium text-ink">
                       {event.to_status
                         ? statusLabel(event.to_status)
-                        : t("common.submitted")}
+                        : statusLabel("submitted")}
                     </p>
                     <p className="text-xs text-muted">
                       {formatDate(event.created_at)}
@@ -822,42 +867,91 @@ export default function EmployeeComplaintDetail({
         </div>
       )}
 
-      {/* Update Status Form */}
-      <div className="mt-6 rounded-lg border border-line bg-surface p-5">
-        <h2 className="text-sm font-semibold text-ink">
-          {t("complaintDetail.updateStatusHeading")}
-        </h2>
-        <form onSubmit={onUpdateStatus} className="mt-3 space-y-3">
-          <select
-            className={inputClass}
-            value={newStatus}
-            onChange={(e) => setNewStatus(e.target.value as ComplaintStatus)}
-          >
-            {ALL_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {statusLabel(s)}
-              </option>
-            ))}
-          </select>
-          <textarea
-            className={inputClass}
-            rows={3}
-            placeholder={`${t("common.note")} (${t("common.optional")})`}
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-          />
-          {saveError && <p className="text-sm text-brick">{saveError}</p>}
-          <button
-            type="submit"
-            disabled={saving}
-            className={primaryButtonClass}
-          >
-            {saving
-              ? t("common.saving")
-              : t("complaintDetail.updateStatusHeading")}
-          </button>
-        </form>
-      </div>
+      {/* Information Request */}
+      <ComplaintInformationRequest
+        complaint={complaint}
+        onRequestInfo={onRequestInfo}
+      />
+
+      {/* Update Status Form - with backend-enforced transitions */}
+      {!isTerminalStatus(complaint.status) && (
+        <div className="mt-6 rounded-lg border border-line bg-surface p-5">
+          <h2 className="text-sm font-semibold text-ink">
+            {t("complaintDetail.updateStatusHeading")}
+          </h2>
+          <form onSubmit={onUpdateStatus} className="mt-3 space-y-3">
+            <div>
+              <label className="block text-xs text-muted mb-1">
+                {t("complaintDetail.newStatus")}
+              </label>
+              <select
+                className={inputClass}
+                value={newStatus}
+                onChange={(e) => setNewStatus(e.target.value as ComplaintStatus)}
+                disabled={saving}
+              >
+                <option value="">{t("common.select")}</option>
+                {getValidStatusTransitions(complaint.status).map((s) => (
+                  <option key={s} value={s}>
+                    {statusLabel(s)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-muted mb-1">
+                {t("common.note")}
+                {isNoteRequired(newStatus as ComplaintStatus) && (
+                  <span className="text-brick ml-1">*</span>
+                )}
+                <span className="text-muted ml-1">
+                  ({t("common.optional")})
+                </span>
+              </label>
+              <textarea
+                className={inputClass}
+                rows={3}
+                placeholder={t("complaintDetail.notePlaceholder")}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                disabled={saving}
+                required={isNoteRequired(newStatus as ComplaintStatus)}
+              />
+            </div>
+            {saveError && <p className="text-sm text-brick">{saveError}</p>}
+            <button
+              type="submit"
+              disabled={saving || !newStatus || (isNoteRequired(newStatus as ComplaintStatus) && !note.trim())}
+              className={primaryButtonClass}
+            >
+              {saving
+                ? t("common.saving")
+                : t("complaintDetail.updateStatusHeading")}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Terminal status message */}
+      {isTerminalStatus(complaint.status) && (
+        <div className="mt-6 rounded-lg border border-line bg-surface p-5">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">
+              {complaint.status === "closed" ? "✅" : "🚫"}
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-ink">
+                {complaint.status === "closed"
+                  ? t("complaintDetail.complaintClosed")
+                  : t("complaintDetail.complaintRejected")}
+              </p>
+              <p className="text-xs text-muted">
+                {t("complaintDetail.noFurtherActions")}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

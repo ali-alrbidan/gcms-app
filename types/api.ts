@@ -27,17 +27,20 @@ export interface Employee {
   phone_verified_at?: string | null;
   last_login_at?: string | null;
 }
+export interface PaginationMeta {
+  current_page: number;
+  from: number | null;
+  last_page: number;
+  per_page: number;
+  to: number | null;
+  total: number;
+}
+
 export interface ApiSuccess<T> {
   success: true;
   message?: string;
   data: T;
-  meta?: {
-    total?: number;
-    per_page?: number;
-    current_page?: number;
-    last_page?: number;
-    [key: string]: unknown;
-  };
+  meta?: PaginationMeta;
 }
 
 export interface ApiError {
@@ -107,13 +110,14 @@ export type ComplaintStatus =
   | "under_review"
   | "assigned"
   | "in_progress"
+  | "waiting_citizen"
   | "resolved"
   | "closed"
-  | "rejected";
+  | "rejected"
+  | "escalated";
 
 // export interface Complaint {
 //   id: string | number;
-//   reference_no?: string;
 //   title: string;
 //   description: string;
 //   status: ComplaintStatus;
@@ -130,7 +134,6 @@ export type ComplaintStatus =
 export interface Complaint {
   id: string | number;
   complaint_number?: string;
-  reference_no?: string;
   title: string;
   description: string;
   status: ComplaintStatus;
@@ -151,7 +154,7 @@ export interface Complaint {
   source?: string;
   client_uuid?: string | null;
   client_ref?: string | null;
-  classification_confidence?: string;
+  classification_confidence?: number;
   classification?: {
     auto_assigned: boolean;
     confidence: number;
@@ -170,6 +173,7 @@ export interface Complaint {
   timeline?: TimelineEvent[];
   status_histories?: StatusHistory[];
   assignments?: Assignment[];
+  active_information_request?: ComplaintInformationRequest | null;
   created_at: string;
   updated_at: string;
   [key: string]: unknown;
@@ -208,14 +212,32 @@ export interface Assignment {
   created_at: string;
 }
 
+// "Request additional information" lives on the complaint status lifecycle
+// (see ComplaintInformationRequestResource on the backend).
+export interface ComplaintInformationRequest {
+  id: string | number;
+  message: string;
+  status: "pending" | "responded" | "completed";
+  requested_at?: string | null;
+  responded_at?: string | null;
+  response_message?: string | null;
+  requested_by?: {
+    id: string | number;
+    name: string;
+  } | null;
+}
+
 export interface Attachment {
   id?: number;
-  name?: string;
-  url?: string;
-  path?: string;
-  mime_type?: string;
-  size?: number;
-  created_at?: string;
+  original_name?: string | null;
+  file_name?: string | null;
+  file_path?: string | null;
+  url?: string | null;
+  mime_type?: string | null;
+  file_size?: number | null;
+  disk?: string | null;
+  uploaded_by?: string | null;
+  created_at?: string | null;
 }
 
 export interface TimelineEvent {

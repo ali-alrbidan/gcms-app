@@ -53,9 +53,11 @@ const STATUS_STYLES: Record<ComplaintStatus, string> = {
   under_review: "bg-amber/10 text-amber",
   assigned: "bg-brass/10 text-brass",
   in_progress: "bg-amber/10 text-amber",
+  waiting_citizen: "bg-purple-500/10 text-purple-500",
   resolved: "bg-teal/10 text-teal",
   closed: "bg-teal/10 text-teal",
   rejected: "bg-brick/10 text-brick",
+  escalated: "bg-orange-500/10 text-orange-500",
 };
 
 export const ALL_STATUSES: ComplaintStatus[] = [
@@ -63,6 +65,8 @@ export const ALL_STATUSES: ComplaintStatus[] = [
   "under_review",
   "assigned",
   "in_progress",
+  "waiting_citizen",
+  "escalated",
   "resolved",
   "closed",
   "rejected",
