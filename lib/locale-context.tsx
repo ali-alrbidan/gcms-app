@@ -37,7 +37,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     applyDocumentLocale(initial);
   }, []);
 
-  //   const setLocale = useCallback((l: Locale) => {
+  //   const  setLocale = useCallback((l: Locale) => {
   //     setLocaleState(l);
   //     window.localStorage.setItem(STORAGE_KEY, l);
   //     applyDocumentLocale(l);
