@@ -1,19 +1,19 @@
 // "use client";
 
-// import { useEffect, useState } from "react";
-// import { adminCategoriesApi, lookupsApi, ApiError } from "@/lib/api";
-// import type { Category, Department } from "@/types/api";
-// import { Modal } from "@/components/modal";
-// import {
-//   FormField,
-//   inputClass,
-//   primaryButtonClass,
-//   secondaryButtonClass,
+// import { useEffect, useState } from "react";kdfbgksdjbvsdkfjdskbsdkbdskbvdskjvbsdkjvbsdjvdbsvkdsbvskdjvb
+// import { adminCategoriesApi, lookupsApi, ApiError } from "@/lib/api";vdslknsdlvkndsvlksnvlkdsnvdlskvnvlkndslvkvdslv
+// import type { Category, Department } from "@/types/api";vdslkvnsldkvndsvlkdnvldksvnsldkvnsdlkvndslvsnvlsndvlsdnv
+// import { Modal } from "@/components/modal";vdslvnkslkvnsdlkvdsnvlksndvlksndvlksndvlksndvlksv
+// import { kdvslnlkvsndlvnsdvlksdnvlskdvndslkvnskldvnsldkvnsldkvnlskndvlsdvklnsdvlknv
+//   FormField,         vdklsnlkdsnvlksdnvlksdvnlskdvnlskdvnlsdkvnsldkvlskdvlskdv
+//   inputClass,                    lskdvjnslvknsdvlkdsnvlksdnvlkdsnvlksdvnlsdnvlsdnvlsdnvklsdnvsdvsdvsndvklsdnvklsdnvlksdnvlkdsnvlskdv
+//   primaryButtonClass,                 vlsdknhsdlkvhsdokvdsvlshvlksdjvlksdjvlkdsjvlksdjvlskdjvlskdvjs
+//   secondaryButtonClass,                 vlkdsnlkdsvnsldkvnsdlkvnsdlkvnsdlkvnsdlkvndslkvnsdlkvnsdlkvnslkdvnlskdv
 //   dangerButtonClass,
-// } from "@/components/form-field";
+// } from "@/components/form-field";            kdlvsjlksdjvlksdvjkldsvjlsdkvjdslkvjsdvjsdlkvjsdlkvjsdlkvskjvsdov
 
 // type FormState = {
-//   department_id: string;
+//   department_id: string;   vklsnvksdnvlksdnlvknsdlk vnsdlkvndslkvndslkvnsldkvnsldkvnlksdnvlksdvlsdkvnlskdvklsdvnskld vnsvdklnsdvkl s vn
 //   name: string;
 //   code: string;
 //   description: string;
