@@ -109,7 +109,7 @@
 //       await load();
 //     } catch (err) {
 //       setFormError(err instanceof ApiError ? err.message : "تعذّر حفظ التصنيف.");
-//     } finally {
+//     } finally{
 //       setSaving(false);
 //     }
 //   }
