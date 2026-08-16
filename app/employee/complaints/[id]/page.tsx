@@ -401,7 +401,7 @@ export default function EmployeeComplaintDetail({
         href="/employee"
         className="mb-4 inline-flex items-center gap-1 text-sm text-muted transition-colors hover:text-ink"
       >
-        ← {t("common.backToList")}
+        {t("common.backToList")}
       </Link>
 
       {/* Hero header */}
