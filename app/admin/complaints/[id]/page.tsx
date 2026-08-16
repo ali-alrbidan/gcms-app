@@ -2311,6 +2311,7 @@ import {
   secondaryButtonClass,
 } from "@/components/form-field";
 import { useLocale } from "@/lib/locale-context";
+import { ComplaintInformationRequest } from "@/components/complaint-information-request";
 import {
   ChevronLeft,
   User,
@@ -2321,6 +2322,7 @@ import {
   Calendar,
   MessageSquare,
   CheckCircle2,
+  AlertTriangle,
   Circle,
   AlertCircle,
   Loader2,
@@ -2356,20 +2358,30 @@ const STATUS_PIPELINE: Record<
     color: "text-yellow-500",
     step: 3,
   },
+  waiting_citizen: {
+    icon: <Clock className="h-5 w-5" />,
+    color: "text-purple-500",
+    step: 4,
+  },
+  escalated: {
+    icon: <AlertTriangle className="h-5 w-5" />,
+    color: "text-orange-500",
+    step: 5,
+  },
   resolved: {
     icon: <CheckCircle2 className="h-5 w-5" />,
     color: "text-green-500",
-    step: 4,
+    step: 6,
   },
   closed: {
     icon: <CheckCircle2 className="h-5 w-5" />,
     color: "text-gray-500",
-    step: 5,
+    step: 7,
   },
   rejected: {
     icon: <XCircle className="h-5 w-5" />,
     color: "text-red-500",
-    step: 6,
+    step: 8,
   },
 };
 
@@ -2379,6 +2391,8 @@ const STATUS_ORDER: ComplaintStatus[] = [
   "under_review",
   "assigned",
   "in_progress",
+  "waiting_citizen",
+  "escalated",
   "resolved",
   "closed",
   "rejected",
@@ -2510,6 +2524,15 @@ export default function AdminComplaintDetail({
     }
   }
 
+  async function onRequestInfo(message: string) {
+    await adminComplaintsApi.updateStatus(id, {
+      status: "waiting_citizen",
+      note: message,
+    });
+    showSuccess(t("complaintDetail.infoRequestSentToCitizen"));
+    await load();
+  }
+
   async function onSubmitAssign(e: React.FormEvent) {
     e.preventDefault();
     if (!assignedEmployeeId) return;
@@ -2628,8 +2651,8 @@ export default function AdminComplaintDetail({
         </Link>
         <div className="h-6 w-px bg-gray-200" />
         <span className="text-sm text-gray-500">
-          {complaint.reference_no
-            ? `${t("complaintDetail.reference")} #${complaint.reference_no}`
+          {complaint.complaint_number
+            ? `${t("complaintDetail.complaintHash")} #${complaint.complaint_number}`
             : `${t("complaintDetail.complaintHash")} #${complaint.id}`}
         </span>
       </div>
@@ -3168,6 +3191,63 @@ export default function AdminComplaintDetail({
           </div>
         </div>
       </div>
+
+      {/* Information Request */}
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div className="p-6">
+          <ComplaintInformationRequest
+            complaint={complaint}
+            onRequestInfo={onRequestInfo}
+          />
+        </div>
+      </div>
+
+      {/* Attachments Section */}
+      {complaint.attachments && complaint.attachments.length > 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+          <div className="border-b border-gray-100 bg-gray-50/50 px-6 py-4">
+            <h2 className="text-sm font-semibold text-gray-900">
+              {t("complaintDetail.attachmentsTitle")}
+            </h2>
+            <p className="mt-0.5 text-xs text-gray-500">
+              {t("complaintDetail.attachmentsSubtitle")}
+            </p>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {complaint.attachments.map((attachment) => (
+                <div
+                  key={attachment.id}
+                  className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3 hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded bg-indigo-100 text-indigo-600">
+                    <MessageSquare className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {attachment.original_name || attachment.file_name || "—"}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {attachment.file_size
+                        ? `${(attachment.file_size / 1024).toFixed(1)} KB`
+                        : ""}
+                    </p>
+                  </div>
+                  <a
+                    href={attachment.url ?? "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center rounded-md p-2 text-gray-500 hover:bg-gray-200 hover:text-gray-900 transition-colors"
+                    title={t("complaintDetail.downloadAttachment")}
+                  >
+                    <ChevronLeft className="h-4 w-4 rotate-180" />
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

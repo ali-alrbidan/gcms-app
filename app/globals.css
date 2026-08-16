@@ -1,18 +1,22 @@
 @import "tailwindcss";
 
 :root {
-  /* Civic-institutional palette: ink navy + brass, not the default cream/terracotta */
-  --ink: #17202B;        /* near-black navy — sidebar, headings */
-  --ink-2: #2B384A;       /* secondary navy — panels, hover */
-  --paper: #F4F5F3;       /* cool off-white background */
-  --surface: #FFFFFF;     /* card / table surface */
-  --line: #DCE0E3;        /* hairline borders */
-  --muted: #5B6672;       /* secondary text */
-  --brass: #A9782D;       /* primary accent — buttons, active state */
-  --brass-dark: #8A5F20;
-  --teal: #0E6E5B;        /* success / resolved */
-  --brick: #A33B2E;       /* danger / rejected */
-  --amber: #B8862B;       /* warning / in-progress */
+  /* Balagh brand colors */
+  --primary-navy: #082248;
+  --teal: #009199;
+  --deep-navy: #041630;
+  --off-white: #F8FAFC;
+  --text-gray: #5E7084;
+  --surface: #FFFFFF;
+  --line: #DCE0E3;
+  --brick: #A33B2E;
+  --amber: #B8862B;
+  --ink: #041630;
+  --paper: #F8FAFC;
+  --ink-2: #082248;
+  --muted: #5E7084;
+  --brass: #009199;
+  --brass-dark: #006B70;
 }
 
 @theme inline {

@@ -415,6 +415,7 @@ import type {
   Employee,
   LoginStartResponse,
   NotificationDeliveryLog,
+  PaginationMeta,
   Priority,
   ReportOverview,
   SlaRule,
@@ -469,6 +470,14 @@ async function request<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
+  const json = await fetchJson<T>(path, options);
+  return (json as { data: T }).data;
+}
+
+async function fetchJson<T>(
+  path: string,
+  options: RequestOptions = {},
+): Promise<ApiResponse<T>> {
   const { auth = true, headers, ...rest } = options;
 
   const finalHeaders: Record<string, string> = {
@@ -503,7 +512,16 @@ async function request<T>(
     throw new ApiRequestError(message, res.status, errors);
   }
 
-  return (json as { data: T }).data;
+  return json;
+}
+
+async function requestWithMeta<T>(
+  path: string,
+  options: RequestOptions = {},
+): Promise<{ data: T; meta?: PaginationMeta }> {
+  const json = await fetchJson<T>(path, options);
+  const success = json as { data: T; meta?: PaginationMeta };
+  return { data: success.data, meta: success.meta };
 }
 
 /**
@@ -561,10 +579,20 @@ export const authApi = {
   verifyOtp: (payload: {
     user_id: string | number;
     otp: string;
-    purpose: "register" | "login";
+    purpose: "register" | "verify_email" | "login";
     device_name?: string;
   }) =>
     request<VerifyOtpResponse>("/auth/verify-otp", {
+      method: "POST",
+      body: JSON.stringify(payload),
+      auth: false,
+    }),
+
+  resendOtp: (payload: {
+    user_id: string | number;
+    purpose: "register" | "verify_email" | "login";
+  }) =>
+    request<{ requires_otp: boolean }>("/auth/resend-otp", {
       method: "POST",
       body: JSON.stringify(payload),
       auth: false,
@@ -777,22 +805,45 @@ export const adminEmployeesApi = {
 
 export const employeeComplaintsApi = {
   list: async (
-    params: { per_page?: number; page?: number; status?: string } = {},
+    params: {
+      per_page?: number;
+      page?: number;
+      status?: string;
+      scope?: "assigned_to_me" | "my_department" | "all_accessible";
+    } = {},
   ) => {
     const qs = new URLSearchParams(params as Record<string, string>).toString();
-    const raw = await request<unknown>(
-      `/employee/complaints${qs ? `?${qs}` : ""}`,
-      {
+    const endpoint = `/employee/complaints${qs ? `?${qs}` : ""}`;
+    console.log("Employee API - Fetching complaints list:", endpoint);
+    try {
+      const { data, meta } = await requestWithMeta<{
+        complaints: Complaint[];
+      }>(endpoint, {
         method: "GET",
-      },
-    );
-    return { complaints: unwrapList<Complaint>(raw, "complaints") };
+      });
+      console.log("Employee API - Complaints list response:", data, meta);
+      return {
+        complaints: unwrapList<Complaint>(data, "complaints"),
+        meta,
+      };
+    } catch (error) {
+      console.error("Employee API - Error fetching complaints list:", error);
+      throw error;
+    }
   },
   show: async (id: string | number) => {
-    const raw = await request<unknown>(`/employee/complaints/${id}`, {
-      method: "GET",
-    });
-    return { complaint: unwrap<Complaint>(raw, "complaint") };
+    const endpoint = `/employee/complaints/${id}`;
+    console.log("Employee API - Fetching complaint detail:", endpoint);
+    try {
+      const raw = await request<unknown>(endpoint, {
+        method: "GET",
+      });
+      console.log("Employee API - Complaint detail response:", raw);
+      return { complaint: unwrap<Complaint>(raw, "complaint") };
+    } catch (error) {
+      console.error("Employee API - Error fetching complaint detail:", error);
+      throw error;
+    }
   },
   updateStatus: async (
     id: string | number,
@@ -802,15 +853,19 @@ export const employeeComplaintsApi = {
       status: payload.status,
       note: payload.note,
     };
-
-    console.log("Sending payload:", requestBody);
-
-    const raw = await request<unknown>(`/employee/complaints/${id}/status`, {
-      method: "PATCH",
-      body: JSON.stringify(requestBody),
-    });
-    console.log("Response:", raw);
-    return { complaint: unwrap<Complaint>(raw, "complaint") };
+    const endpoint = `/employee/complaints/${id}/status`;
+    console.log("Employee API - Updating complaint status:", endpoint, requestBody);
+    try {
+      const raw = await request<unknown>(endpoint, {
+        method: "PATCH",
+        body: JSON.stringify(requestBody),
+      });
+      console.log("Employee API - Status update response:", raw);
+      return { complaint: unwrap<Complaint>(raw, "complaint") };
+    } catch (error) {
+      console.error("Employee API - Error updating complaint status:", error);
+      throw error;
+    }
   },
 };
 
@@ -891,6 +946,13 @@ export const adminComplaintsApi = {
     return { complaint: unwrap<Complaint>(raw, "complaint") };
   },
 };
+
+// ---------- Information Requests ----------
+// There is NO comments endpoint on the backend. "Request additional
+// information" is driven through the complaint status lifecycle:
+//   PATCH /employee/complaints/{id}/status  with { status: "waiting_citizen", note }
+//   PATCH /admin/complaints/{id}/status     with { status: "waiting_citizen", note }
+// The request/response is read from complaint.active_information_request.
 
 // ---------- Admin: Reports ----------
 
