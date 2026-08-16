@@ -198,7 +198,9 @@ export default function EmployeeComplaintDetail({
     } catch (err) {
       setSaveError(
         err instanceof ApiError
-          ? err.message
+          ? err.errors?.status?.[0]
+            ? err.errors.status[0]
+            : err.message || t("complaintDetail.statusUpdateFailed")
           : t("complaintDetail.statusUpdateFailed"),
       );
     } finally {

@@ -798,10 +798,18 @@ export const employeeComplaintsApi = {
     id: string | number,
     payload: { status: ComplaintStatus; note?: string },
   ) => {
+    const requestBody = {
+      status: payload.status,
+      note: payload.note,
+    };
+
+    console.log("Sending payload:", requestBody);
+
     const raw = await request<unknown>(`/employee/complaints/${id}/status`, {
       method: "PATCH",
-      body: JSON.stringify(payload),
+      body: JSON.stringify(requestBody),
     });
+    console.log("Response:", raw);
     return { complaint: unwrap<Complaint>(raw, "complaint") };
   },
 };
