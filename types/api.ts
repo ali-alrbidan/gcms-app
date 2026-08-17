@@ -111,22 +111,122 @@ export type ComplaintStatus =
   | "closed"
   | "rejected";
 
+// export interface Complaint {
+//   id: string | number;
+//   reference_no?: string;
+//   title: string;
+//   description: string;
+//   status: ComplaintStatus;
+//   department?: Department | null;
+//   category?: Category | null;
+//   priority?: Priority | null;
+//   citizen?: User | null;
+//   assigned_employee?: User | null;
+//   created_at: string;
+//   updated_at: string;
+//   [key: string]: unknown;
+// }
+
 export interface Complaint {
   id: string | number;
+  complaint_number?: string;
   reference_no?: string;
   title: string;
   description: string;
   status: ComplaintStatus;
+  department_id?: number;
   department?: Department | null;
+  category_id?: number;
   category?: Category | null;
+  priority_id?: number;
   priority?: Priority | null;
+  latitude?: string;
+  longitude?: string;
+  address?: string;
+  location?: {
+    lat: string;
+    lng: string;
+    address: string;
+  };
+  source?: string;
+  client_uuid?: string | null;
+  client_ref?: string | null;
+  classification_confidence?: string;
+  classification?: {
+    auto_assigned: boolean;
+    confidence: number;
+    method: string;
+  };
+  due_at?: string;
+  sla_due_at?: string;
+  first_response_at?: string | null;
+  resolved_at?: string | null;
+  closed_at?: string | null;
+  is_sla_breached?: boolean;
   citizen?: User | null;
+  assigned_employee_id?: number;
   assigned_employee?: User | null;
+  attachments?: Attachment[];
+  timeline?: TimelineEvent[];
+  status_histories?: StatusHistory[];
+  assignments?: Assignment[];
   created_at: string;
   updated_at: string;
   [key: string]: unknown;
 }
+export interface StatusHistory {
+  id: number;
+  from_status?: string | null;
+  to_status?: string;
+  note?: string;
+  duration_minutes?: number | null;
+  changed_by?: string;
+  created_at: string;
+}
 
+export interface Assignment {
+  id: number;
+  assigned_by: {
+    id: number;
+    name: string;
+    role?: string;
+  };
+  assigned_to: {
+    id: number;
+    name: string;
+    email?: string;
+    phone?: string;
+    role?: string;
+  };
+  department?: {
+    id: number;
+    name: string;
+    code?: string;
+  };
+  note?: string;
+  assigned_at: string;
+  created_at: string;
+}
+
+export interface Attachment {
+  id?: number;
+  name?: string;
+  url?: string;
+  path?: string;
+  mime_type?: string;
+  size?: number;
+  created_at?: string;
+}
+
+export interface TimelineEvent {
+  id: number;
+  from_status?: string | null;
+  to_status?: string;
+  note?: string;
+  duration_minutes?: number | null;
+  changed_by?: string;
+  created_at: string;
+}
 export interface ClassificationRule {
   id: string | number;
   department_id: string | number;
