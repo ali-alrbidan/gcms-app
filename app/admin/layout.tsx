@@ -24,20 +24,7 @@
 // }
 
 import { RoleGuard } from "@/lib/role-guard";
-import { DashboardShell, type NavItem } from "@/components/dashboard-shell";
-
-const navItems: NavItem[] = [
-  { labelKey: "nav.overview", href: "/admin" },
-  { labelKey: "nav.complaints", href: "/admin/complaints" },
-  { labelKey: "nav.reports", href: "/admin/reports" },
-  { labelKey: "nav.users", href: "/admin/users" },
-  { labelKey: "nav.departments", href: "/admin/departments" },
-  { labelKey: "nav.categories", href: "/admin/categories" },
-  { labelKey: "nav.priorities", href: "/admin/priorities" },
-  { labelKey: "nav.slaRules", href: "/admin/sla-rules" },
-  { labelKey: "nav.classificationRules", href: "/admin/classification-rules" },
-  { labelKey: "nav.notifications", href: "/admin/notifications" },
-];
+import { DashboardShell } from "@/components/dashboard-shell";
 
 export default function AdminLayout({
   children,
@@ -46,7 +33,7 @@ export default function AdminLayout({
 }) {
   return (
     <RoleGuard role="admin">
-      <DashboardShell navItems={navItems} sectionLabelKey="nav.adminConsole">
+      <DashboardShell role="admin">
         {children}
       </DashboardShell>
     </RoleGuard>

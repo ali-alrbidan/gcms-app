@@ -54,3 +54,7 @@ export function presetFilters(preset: "7d" | "30d" | "90d" | "month", now = new 
   const iso = (date: Date) => date.toISOString().slice(0, 10);
   return { date_from: iso(start), date_to: iso(end) };
 }
+
+export function complaintWorkspaceHref(id: string | number): string {
+  return `/complaint-workspace/${id}`;
+}

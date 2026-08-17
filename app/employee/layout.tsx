@@ -14,9 +14,7 @@
 // }
 
 import { RoleGuard } from "@/lib/role-guard";
-import { DashboardShell, type NavItem } from "@/components/dashboard-shell";
-
-const navItems: NavItem[] = [{ labelKey: "nav.myWork", href: "/employee" }];
+import { DashboardShell } from "@/components/dashboard-shell";
 
 export default function EmployeeLayout({
   children,
@@ -25,7 +23,7 @@ export default function EmployeeLayout({
 }) {
   return (
     <RoleGuard role="employee">
-      <DashboardShell navItems={navItems} sectionLabelKey="nav.employeeConsole">
+      <DashboardShell role="employee">
         {children}
       </DashboardShell>
     </RoleGuard>

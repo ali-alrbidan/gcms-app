@@ -414,6 +414,13 @@ const ar: Dict = {
     },
   },
   appName: "نظام إدارة الشكاوى الحكومية",
+  shell: {
+    primaryNavigation: "التنقل الرئيسي للوحة التحكم",
+    openNavigation: "فتح قائمة التنقل",
+    closeNavigation: "إغلاق قائمة التنقل",
+    collapseSidebar: "طي الشريط الجانبي",
+    expandSidebar: "توسيع الشريط الجانبي",
+  },
   common: {
     save: "حفظ",
     saving: "جارٍ الحفظ…",
@@ -919,6 +926,13 @@ const en: Dict = {
     },
   },
   appName: "Government Complaints Management System",
+  shell: {
+    primaryNavigation: "Main dashboard navigation",
+    openNavigation: "Open navigation menu",
+    closeNavigation: "Close navigation menu",
+    collapseSidebar: "Collapse sidebar",
+    expandSidebar: "Expand sidebar",
+  },
   common: {
     save: "Save",
     saving: "Saving…",
