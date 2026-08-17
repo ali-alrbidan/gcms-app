@@ -247,10 +247,10 @@ export default function EmployeeDashboard() {
                     key={c.id}
                     role="link"
                     tabIndex={0}
-                    onClick={() => router.push(`/employee/complaints/${c.id}`)}
+                    onClick={() => router.push(`/complaint-workspace/${c.id}`)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
-                        router.push(`/employee/complaints/${c.id}`);
+                        router.push(`/complaint-workspace/${c.id}`);
                       }
                     }}
                     className="group cursor-pointer border-b border-line text-left transition-colors last:border-0 hover:bg-paper focus:outline-none focus-visible:bg-paper focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"

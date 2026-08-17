@@ -417,11 +417,21 @@ import type {
   NotificationDeliveryLog,
   PaginationMeta,
   Priority,
-  ReportOverview,
   SlaRule,
   User,
   VerifyOtpResponse,
 } from "@/types/api";
+import type {
+  ComplaintStatusMetric,
+  ComplaintTrendMetric,
+  DepartmentReportMetric,
+  EmployeePerformanceMetric,
+  PriorityReportMetric,
+  ReportFilters,
+  ReportOverview,
+  SlaBreachesResponse,
+  SlaPerformanceReport,
+} from "@/types/reports";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL as string;
 
@@ -963,50 +973,27 @@ export const adminComplaintsApi = {
 // ---------- Admin: Reports ----------
 
 export const reportsApi = {
-  overview: () =>
-    request<ReportOverview>("/admin/reports/overview", { method: "GET" }),
-  complaintsByStatus: () =>
-    request<Record<string, number> | unknown[]>(
-      "/admin/reports/complaints-by-status",
-      {
-        method: "GET",
-      },
-    ),
-  complaintsByDepartment: () =>
-    request<unknown[]>("/admin/reports/complaints-by-department", {
-      method: "GET",
-    }),
-  complaintsByPriority: () =>
-    request<unknown[]>("/admin/reports/complaints-by-priority", {
-      method: "GET",
-    }),
-  slaPerformance: () =>
-    request<unknown>("/admin/reports/sla-performance", { method: "GET" }),
-  employeePerformance: () =>
-    request<unknown[]>("/admin/reports/employee-performance", {
-      method: "GET",
-    }),
-  complaintTrends: (
-    params: { date_from?: string; date_to?: string; group_by?: string } = {},
-  ) => {
-    const qs = new URLSearchParams(params as Record<string, string>).toString();
-    return request<unknown[]>(
-      `/admin/reports/complaint-trends${qs ? `?${qs}` : ""}`,
-      {
-        method: "GET",
-      },
-    );
-  },
-  slaBreaches: (params: { per_page?: number; page?: number } = {}) => {
-    const qs = new URLSearchParams(params as Record<string, string>).toString();
-    return request<{ data: unknown[] } | unknown[]>(
-      `/admin/reports/sla-breaches${qs ? `?${qs}` : ""}`,
-      {
-        method: "GET",
-      },
-    );
+  overview: (filters: ReportFilters = {}) => request<ReportOverview>(`/admin/reports/overview${reportQuery(filters)}`, { method: "GET" }),
+  complaintsByStatus: (filters: ReportFilters = {}) => request<ComplaintStatusMetric[]>(`/admin/reports/complaints-by-status${reportQuery(filters)}`, { method: "GET" }),
+  complaintsByDepartment: (filters: ReportFilters = {}) => request<DepartmentReportMetric[]>(`/admin/reports/complaints-by-department${reportQuery(filters)}`, { method: "GET" }),
+  complaintsByPriority: (filters: ReportFilters = {}) => request<PriorityReportMetric[]>(`/admin/reports/complaints-by-priority${reportQuery(filters)}`, { method: "GET" }),
+  slaPerformance: (filters: ReportFilters = {}) => request<SlaPerformanceReport>(`/admin/reports/sla-performance${reportQuery(filters)}`, { method: "GET" }),
+  employeePerformance: (filters: ReportFilters = {}) => request<EmployeePerformanceMetric[]>(`/admin/reports/employee-performance${reportQuery(filters)}`, { method: "GET" }),
+  complaintTrends: (filters: ReportFilters = {}) => request<ComplaintTrendMetric[]>(`/admin/reports/complaint-trends${reportQuery(filters)}`, { method: "GET" }),
+  slaBreaches: async (filters: ReportFilters = {}) => {
+    const { data, meta } = await requestWithMeta<SlaBreachesResponse>(`/admin/reports/sla-breaches${reportQuery(filters)}`, { method: "GET" });
+    return { ...data, meta };
   },
 };
+
+function reportQuery(filters: ReportFilters): string {
+  const query = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== "") query.set(key, String(value));
+  });
+  const value = query.toString();
+  return value ? `?${value}` : "";
+}
 
 // ---------- Classification Management ----------
 

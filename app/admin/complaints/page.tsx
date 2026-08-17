@@ -212,7 +212,7 @@ export default function AdminComplaintsPage() {
                 >
                   <td className="px-4 py-3">
                     <Link
-                      href={`/admin/complaints/${c.id}`}
+                      href={`/complaint-workspace/${c.id}`}
                       className="font-medium text-ink hover:text-brass hover:underline"
                     >
                       {c.title}
