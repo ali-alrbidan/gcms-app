@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { adminUsersApi, lookupsApi, ApiError } from "@/lib/api";
-import type { User, UserRole, Department } from "@/types/api";
+import type { User, UserRole, Department, PaginationMeta } from "@/types/api";
 import { useLocale } from "@/lib/locale-context";
 import { Modal } from "@/components/modal";
 import {
@@ -11,6 +11,7 @@ import {
   primaryButtonClass,
   secondaryButtonClass,
 } from "@/components/form-field";
+import { SharedListPagination } from "@/components/data-table/shared-list-pagination";
 
 type FormState = {
   name: string;
@@ -45,6 +46,9 @@ export default function UsersPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+  const [meta, setMeta] = useState<PaginationMeta>();
 
   const [editing, setEditing] = useState<User | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -56,9 +60,9 @@ export default function UsersPage() {
     setLoading(true);
     setError(null);
     try {
-      const [{ users }, { departments }] = await Promise.all([
+      const [{ users, meta }, { departments }] = await Promise.all([
         adminUsersApi.list({
-          per_page: 50,
+          per_page: perPage, page,
           ...(search ? { search } : {}),
           ...(roleFilter ? { role: roleFilter as UserRole } : {}),
           ...(statusFilter ? { is_active: statusFilter === "active" } : {}),
@@ -66,6 +70,7 @@ export default function UsersPage() {
         lookupsApi.departments(),
       ]);
       setUsers(users);
+      setMeta(meta);
       setDepartments(departments);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Error loading users.");
@@ -75,9 +80,10 @@ export default function UsersPage() {
   }
 
   useEffect(() => {
-    load();
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, roleFilter, statusFilter]);
+  }, [search, roleFilter, statusFilter, page, perPage]);
 
   function openCreate() {
     setEditing(null);
@@ -175,12 +181,12 @@ export default function UsersPage() {
           className={`${inputClass} max-w-xs`}
           placeholder={t("users.searchPlaceholder")}
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
         />
         <select
           className={inputClass}
           value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
+          onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
         >
           <option value="">{t("users.allRoles")}</option>
           <option value="citizen">{t("roles.citizen")}</option>
@@ -190,7 +196,7 @@ export default function UsersPage() {
         <select
           className={inputClass}
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
         >
           <option value="">{t("users.allStatuses")}</option>
           <option value="active">{t("common.active")}</option>
@@ -265,6 +271,7 @@ export default function UsersPage() {
           </table>
         )}
       </div>
+      <SharedListPagination meta={meta} onPageChange={setPage} onPerPageChange={(value) => { setPerPage(value); setPage(1); }} />
 
       {showForm && (
         <Modal

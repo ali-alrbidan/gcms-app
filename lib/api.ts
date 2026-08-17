@@ -669,14 +669,15 @@ export const lookupsApi = {
 // ---------- Admin: Departments ----------
 
 export const adminDepartmentsApi = {
-  list: (params: { per_page?: number; page?: number } = {}) => {
-    const qs = new URLSearchParams(params as Record<string, string>).toString();
-    return request<{ departments: Department[] }>(
+  list: async (params: { per_page?: number; page?: number; search?: string; is_active?: boolean } = {}) => {
+    const qs = new URLSearchParams(Object.entries(params).filter(([, value]) => value !== undefined && value !== "").map(([key, value]) => [key, String(value)])).toString();
+    const { data, meta } = await requestWithMeta<{ departments: Department[] }>(
       `/admin/departments${qs ? `?${qs}` : ""}`,
       {
         method: "GET",
       },
     );
+    return { ...data, meta };
   },
   create: (payload: Partial<Department>) =>
     request<{ department: Department }>("/admin/departments", {
@@ -699,14 +700,15 @@ export const adminDepartmentsApi = {
 // ---------- Admin: Categories ----------
 
 export const adminCategoriesApi = {
-  list: (params: { per_page?: number; page?: number } = {}) => {
-    const qs = new URLSearchParams(params as Record<string, string>).toString();
-    return request<{ categories: Category[] }>(
+  list: async (params: { per_page?: number; page?: number; search?: string; department_id?: string | number; department_code?: string; is_active?: boolean } = {}) => {
+    const qs = new URLSearchParams(Object.entries(params).filter(([, value]) => value !== undefined && value !== "").map(([key, value]) => [key, String(value)])).toString();
+    const { data, meta } = await requestWithMeta<{ categories: Category[] }>(
       `/admin/categories${qs ? `?${qs}` : ""}`,
       {
         method: "GET",
       },
     );
+    return { ...data, meta };
   },
   create: (payload: Partial<Category>) =>
     request<{ category: Category }>("/admin/categories", {
@@ -729,14 +731,15 @@ export const adminCategoriesApi = {
 // ---------- Admin: Priorities ----------
 
 export const adminPrioritiesApi = {
-  list: (params: { per_page?: number; page?: number } = {}) => {
-    const qs = new URLSearchParams(params as Record<string, string>).toString();
-    return request<{ priorities: Priority[] }>(
+  list: async (params: { per_page?: number; page?: number; search?: string } = {}) => {
+    const qs = new URLSearchParams(Object.entries(params).filter(([, value]) => value !== undefined && value !== "").map(([key, value]) => [key, String(value)])).toString();
+    const { data, meta } = await requestWithMeta<{ priorities: Priority[] }>(
       `/admin/priorities${qs ? `?${qs}` : ""}`,
       {
         method: "GET",
       },
     );
+    return { ...data, meta };
   },
   create: (payload: Partial<Priority>) =>
     request<{ priority: Priority }>("/admin/priorities", {
@@ -759,14 +762,15 @@ export const adminPrioritiesApi = {
 // ---------- Admin: SLA Rules ----------
 
 export const adminSlaRulesApi = {
-  list: (params: { per_page?: number; page?: number } = {}) => {
-    const qs = new URLSearchParams(params as Record<string, string>).toString();
-    return request<{ sla_rules: SlaRule[] }>(
+  list: async (params: { per_page?: number; page?: number; department_id?: string | number; category_id?: string | number; priority_id?: string | number; is_active?: boolean } = {}) => {
+    const qs = new URLSearchParams(Object.entries(params).filter(([, value]) => value !== undefined && value !== "").map(([key, value]) => [key, String(value)])).toString();
+    const { data, meta } = await requestWithMeta<{ sla_rules: SlaRule[] }>(
       `/admin/sla-rules${qs ? `?${qs}` : ""}`,
       {
         method: "GET",
       },
     );
+    return { ...data, meta };
   },
   create: (payload: Partial<SlaRule>) =>
     request<{ sla_rule: SlaRule }>("/admin/sla-rules", {
@@ -825,6 +829,10 @@ export const employeeComplaintsApi = {
       per_page?: number;
       page?: number;
       status?: string;
+      search?: string;
+      priority_id?: string | number;
+      date_from?: string;
+      date_to?: string;
       scope?: "assigned_to_me" | "my_department" | "all_accessible";
     } = {},
   ) => {
@@ -889,16 +897,16 @@ export const employeeComplaintsApi = {
 
 export const adminComplaintsApi = {
   list: async (
-    params: { per_page?: number; page?: number; status?: string } = {},
+    params: { per_page?: number; page?: number; status?: string; search?: string; department_id?: string | number; category_id?: string | number; priority_id?: string | number; assigned_employee_id?: string | number; citizen_id?: string | number; is_sla_breached?: boolean; date_from?: string; date_to?: string } = {},
   ) => {
-    const qs = new URLSearchParams(params as Record<string, string>).toString();
-    const raw = await request<unknown>(
+    const qs = new URLSearchParams(Object.entries(params).filter(([, value]) => value !== undefined && value !== "").map(([key, value]) => [key, String(value)])).toString();
+    const { data, meta } = await requestWithMeta<unknown>(
       `/admin/complaints${qs ? `?${qs}` : ""}`,
       {
         method: "GET",
       },
     );
-    return { complaints: unwrapList<Complaint>(raw, "complaints") };
+    return { complaints: unwrapList<Complaint>(data, "complaints"), meta };
   },
   show: async (id: string | number) => {
     const raw = await request<unknown>(`/admin/complaints/${id}`, {
@@ -1003,12 +1011,13 @@ export const classificationApi = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-  listRules: (params: { per_page?: number; page?: number } = {}) => {
-    const qs = new URLSearchParams(params as Record<string, string>).toString();
-    return request<{ classification_rules: ClassificationRule[] }>(
+  listRules: async (params: { per_page?: number; page?: number; department_id?: string | number; category_id?: string | number; keyword?: string; is_active?: boolean } = {}) => {
+    const qs = new URLSearchParams(Object.entries(params).filter(([, value]) => value !== undefined && value !== "").map(([key, value]) => [key, String(value)])).toString();
+    const { data, meta } = await requestWithMeta<{ classification_rules: ClassificationRule[] }>(
       `/admin/classification-rules${qs ? `?${qs}` : ""}`,
       { method: "GET" },
     );
+    return { ...data, meta };
   },
   createRule: (payload: Partial<ClassificationRule>) =>
     request<{ classification_rule: ClassificationRule }>(
@@ -1040,12 +1049,22 @@ export const classificationApi = {
 // ---------- Notification Admin ----------
 
 export const notificationAdminApi = {
-  listDeliveryLogs: (params: { per_page?: number; page?: number } = {}) => {
-    const qs = new URLSearchParams(params as Record<string, string>).toString();
-    return request<{ delivery_logs: NotificationDeliveryLog[] }>(
+  listDeliveryLogs: async (params: { per_page?: number; page?: number; channel?: string; status?: string; type?: string; date_from?: string; date_to?: string; user_id?: string | number; complaint_id?: string | number } = {}) => {
+    const query = Object.entries(params).reduce<Record<string, string>>((result, [key, value]) => {
+      if (value !== undefined && value !== "") result[key] = String(value);
+      return result;
+    }, {});
+    const qs = new URLSearchParams(query).toString();
+    const { data, meta } = await requestWithMeta<{ delivery_logs: NotificationDeliveryLog[] }>(
       `/admin/notification-delivery-logs${qs ? `?${qs}` : ""}`,
       { method: "GET" },
     );
+    return { ...data, meta };
+    return { ...data, meta };
+    return { ...data, meta };
+    return { ...data, meta };
+    return { ...data, meta };
+    return { delivery_logs: data.delivery_logs, meta };
   },
   showDeliveryLog: (id: string | number) =>
     request<{ delivery_log: NotificationDeliveryLog }>(
@@ -1058,7 +1077,7 @@ export const notificationAdminApi = {
 // ---------- Admin: User Management ----------
 
 export const adminUsersApi = {
-  list: (
+  list: async (
     params: {
       search?: string;
       role?: "citizen" | "employee" | "admin";
@@ -1078,9 +1097,10 @@ export const adminUsersApi = {
     if (params.page) query.page = String(params.page);
     if (params.per_page) query.per_page = String(params.per_page);
     const qs = new URLSearchParams(query).toString();
-    return request<{ users: User[] }>(`/admin/users${qs ? `?${qs}` : ""}`, {
+    const { data, meta } = await requestWithMeta<{ users: User[] }>(`/admin/users${qs ? `?${qs}` : ""}`, {
       method: "GET",
     });
+    return { ...data, meta };
   },
 
   create: (payload: {

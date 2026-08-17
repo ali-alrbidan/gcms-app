@@ -269,7 +269,7 @@
 
 import { useEffect, useState } from "react";
 import { adminCategoriesApi, lookupsApi, ApiError } from "@/lib/api";
-import type { Category, Department } from "@/types/api";
+import type { Category, Department, PaginationMeta } from "@/types/api";
 import { Modal } from "@/components/modal";
 import {
   FormField,
@@ -279,6 +279,7 @@ import {
   dangerButtonClass,
 } from "@/components/form-field";
 import { useLocale } from "@/lib/locale-context";
+import { SharedListPagination, pageAfterDelete } from "@/components/data-table/shared-list-pagination";
 
 type FormState = {
   department_id: string;
@@ -304,6 +305,7 @@ export default function CategoriesPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1); const [perPage, setPerPage] = useState(10); const [meta, setMeta] = useState<PaginationMeta>();
 
   const [editing, setEditing] = useState<Category | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -315,11 +317,12 @@ export default function CategoriesPage() {
     setLoading(true);
     setError(null);
     try {
-      const [{ categories }, { departments }] = await Promise.all([
-        adminCategoriesApi.list({ per_page: 50 }),
+      const [{ categories, meta }, { departments }] = await Promise.all([
+        adminCategoriesApi.list({ per_page: perPage, page }),
         lookupsApi.departments(),
       ]);
       setCategories(categories);
+      setMeta(meta);
       setDepartments(departments);
     } catch (err) {
       setError(
@@ -331,8 +334,10 @@ export default function CategoriesPage() {
   }
 
   useEffect(() => {
-    load();
-  }, []);
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, perPage]);
 
   function openCreate() {
     setEditing(null);
@@ -392,7 +397,7 @@ export default function CategoriesPage() {
     if (!confirm(confirmMsg)) return;
     try {
       await adminCategoriesApi.remove(cat.id);
-      await load();
+      const previousPage = pageAfterDelete(meta, categories.length); if (previousPage) setPage(previousPage); else await load();
     } catch (err) {
       alert(
         err instanceof ApiError ? err.message : t("categories.couldNotDelete"),
@@ -481,6 +486,7 @@ export default function CategoriesPage() {
           </table>
         )}
       </div>
+      <SharedListPagination meta={meta} onPageChange={setPage} onPerPageChange={(value) => { setPerPage(value); setPage(1); }} />
 
       {showForm && (
         <Modal

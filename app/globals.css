@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  color-scheme: light;
   /* Balagh brand colors */
   --primary-navy: #082248;
   --teal: #009199;
@@ -17,6 +18,36 @@
   --muted: #5E7084;
   --brass: #009199;
   --brass-dark: #006B70;
+  --background: #F8FAFC;
+  --surface-raised: #FFFFFF;
+  --surface-muted: rgba(8, 34, 72, 0.045);
+  --foreground: #041630;
+  --foreground-secondary: #5E7084;
+  --border: rgba(8, 34, 72, 0.12);
+  --border-strong: rgba(8, 34, 72, 0.2);
+  --primary-soft: rgba(0, 145, 153, 0.10);
+  --chart-grid: #DCE0E3;
+  --scroll-thumb: #7e9da5;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #041630;
+  --surface: #082248;
+  --line: rgba(248, 250, 252, 0.13);
+  --muted: rgba(248, 250, 252, 0.66);
+  --brass: #009199;
+  --brass-dark: #23a9ad;
+  --background: #041630;
+  --surface-raised: #0c2d58;
+  --surface-muted: rgba(248, 250, 252, 0.07);
+  --foreground: #F8FAFC;
+  --foreground-secondary: rgba(248, 250, 252, 0.68);
+  --border: rgba(248, 250, 252, 0.13);
+  --border-strong: rgba(248, 250, 252, 0.22);
+  --primary-soft: rgba(0, 145, 153, 0.18);
+  --chart-grid: rgba(248, 250, 252, 0.20);
+  --scroll-thumb: rgba(248, 250, 252, 0.42);
 }
 
 @theme inline {
@@ -32,14 +63,38 @@
   --color-teal: var(--teal);
   --color-brick: var(--brick);
   --color-amber: var(--amber);
+  --color-surface-muted: var(--surface-muted);
 }
 
 body {
-  background: var(--paper);
-  color: var(--ink);
+  background: var(--background);
+  color: var(--foreground);
   font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) transparent;
 }
 
 h1, h2, h3 {
   font-family: Georgia, "Times New Roman", ui-serif, serif;
 }
+
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border: 2px solid transparent; border-radius: 999px; background-clip: padding-box; }
+*::-webkit-scrollbar-thumb:hover { background-color: var(--teal); }
+
+.scrollbar-hidden { scrollbar-width: none; -ms-overflow-style: none; }
+.scrollbar-hidden::-webkit-scrollbar { display: none; }
+
+/* Existing dashboard semantic utilities become theme-aware without component branching. */
+[data-theme="dark"] .text-ink { color: var(--foreground) !important; }
+[data-theme="dark"] .text-muted { color: var(--foreground-secondary) !important; }
+[data-theme="dark"] .bg-white { background-color: var(--surface) !important; }
+[data-theme="dark"] .bg-paper { background-color: var(--paper) !important; }
+[data-theme="dark"] .bg-surface { background-color: var(--surface) !important; }
+[data-theme="dark"] .border-line { border-color: var(--line) !important; }
+[data-theme="dark"] .divide-line > :not(:last-child) { border-color: var(--line) !important; }
+[data-theme="dark"] input, [data-theme="dark"] select, [data-theme="dark"] textarea { background-color: var(--surface-raised); color: var(--foreground); border-color: var(--line); }
+[data-theme="dark"] input::placeholder, [data-theme="dark"] textarea::placeholder { color: var(--foreground-secondary); }
+[data-theme="dark"] option { background-color: var(--surface); color: var(--foreground); }

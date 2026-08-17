@@ -219,7 +219,7 @@
 
 import { useEffect, useState } from "react";
 import { adminPrioritiesApi, ApiError } from "@/lib/api";
-import type { Priority } from "@/types/api";
+import type { Priority, PaginationMeta } from "@/types/api";
 import { Modal } from "@/components/modal";
 import {
   FormField,
@@ -229,6 +229,7 @@ import {
   dangerButtonClass,
 } from "@/components/form-field";
 import { useLocale } from "@/lib/locale-context";
+import { SharedListPagination, pageAfterDelete } from "@/components/data-table/shared-list-pagination";
 
 type FormState = {
   name: string;
@@ -251,6 +252,7 @@ export default function PrioritiesPage() {
   const [priorities, setPriorities] = useState<Priority[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1); const [perPage, setPerPage] = useState(10); const [meta, setMeta] = useState<PaginationMeta>();
 
   const [editing, setEditing] = useState<Priority | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -262,8 +264,9 @@ export default function PrioritiesPage() {
     setLoading(true);
     setError(null);
     try {
-      const { priorities } = await adminPrioritiesApi.list({ per_page: 50 });
+      const { priorities, meta } = await adminPrioritiesApi.list({ per_page: perPage, page });
       setPriorities(priorities);
+      setMeta(meta);
     } catch (err) {
       setError(
         err instanceof ApiError ? err.message : t("priorities.couldNotLoad"),
@@ -274,8 +277,10 @@ export default function PrioritiesPage() {
   }
 
   useEffect(() => {
-    load();
-  }, []);
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, perPage]);
 
   function openCreate() {
     setEditing(null);
@@ -324,7 +329,7 @@ export default function PrioritiesPage() {
     if (!confirm(confirmMsg)) return;
     try {
       await adminPrioritiesApi.remove(p.id);
-      await load();
+      const previousPage = pageAfterDelete(meta, priorities.length); if (previousPage) setPage(previousPage); else await load();
     } catch (err) {
       alert(
         err instanceof ApiError ? err.message : t("priorities.couldNotDelete"),
@@ -402,6 +407,7 @@ export default function PrioritiesPage() {
           </table>
         )}
       </div>
+      <SharedListPagination meta={meta} onPageChange={setPage} onPerPageChange={(value) => { setPerPage(value); setPage(1); }} />
 
       {showForm && (
         <Modal

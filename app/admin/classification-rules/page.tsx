@@ -350,6 +350,7 @@ import type {
   Department,
   Category,
   ClassificationPreviewResult,
+  PaginationMeta,
 } from "@/types/api";
 import { Modal } from "@/components/modal";
 import {
@@ -360,6 +361,7 @@ import {
   dangerButtonClass,
 } from "@/components/form-field";
 import { useLocale } from "@/lib/locale-context";
+import { SharedListPagination, pageAfterDelete } from "@/components/data-table/shared-list-pagination";
 
 type FormState = {
   department_id: string;
@@ -388,6 +390,7 @@ export default function ClassificationRulesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1); const [perPage, setPerPage] = useState(10); const [meta, setMeta] = useState<PaginationMeta>();
 
   const [editing, setEditing] = useState<ClassificationRule | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -406,13 +409,14 @@ export default function ClassificationRulesPage() {
     setLoading(true);
     setError(null);
     try {
-      const [{ classification_rules }, { departments }, { categories }] =
+      const [{ classification_rules, meta }, { departments }, { categories }] =
         await Promise.all([
-          classificationApi.listRules({ per_page: 50 }),
+          classificationApi.listRules({ per_page: perPage, page }),
           lookupsApi.departments(),
           lookupsApi.categories(),
         ]);
       setRules(classification_rules);
+      setMeta(meta);
       setDepartments(departments);
       setCategories(categories);
     } catch (err) {
@@ -427,8 +431,10 @@ export default function ClassificationRulesPage() {
   }
 
   useEffect(() => {
-    load();
-  }, []);
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, perPage]);
 
   function openCreate() {
     setEditing(null);
@@ -483,7 +489,7 @@ export default function ClassificationRulesPage() {
     if (!confirm(confirmMsg)) return;
     try {
       await classificationApi.removeRule(rule.id);
-      await load();
+      const previousPage = pageAfterDelete(meta, rules.length); if (previousPage) setPage(previousPage); else await load();
     } catch (err) {
       alert(
         err instanceof ApiError
@@ -651,6 +657,7 @@ export default function ClassificationRulesPage() {
           </div>
         )}
       </div>
+      <SharedListPagination meta={meta} onPageChange={setPage} onPerPageChange={(value) => { setPerPage(value); setPage(1); }} />
 
       {showForm && (
         <Modal

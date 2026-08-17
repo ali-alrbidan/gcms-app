@@ -1,142 +1,39 @@
-// "use client";
-
-// import { useEffect, useState } from "react";
-// import { notificationAdminApi, ApiError } from "@/lib/api";
-// import type { NotificationDeliveryLog } from "@/types/api";
-
-// export default function NotificationsPage() {
-//   const [logs, setLogs] = useState<NotificationDeliveryLog[]>([]);
-//   const [loading, setLoading] = useState(true);
-//   const [error, setError] = useState<string | null>(null);
-
-//   useEffect(() => {
-//     notificationAdminApi
-//       .listDeliveryLogs({ per_page: 50 })
-//       .then(({ delivery_logs }) => setLogs(delivery_logs))
-//       .catch((err) => setError(err instanceof ApiError ? err.message : "تعذّر تحميل السجلات."))
-//       .finally(() => setLoading(false));
-//   }, []);
-
-//   return (
-//     <div>
-//       <h1 className="text-2xl font-semibold text-ink">سجلات الإشعارات</h1>
-//       <p className="mt-1 text-sm text-muted">متابعة حالة تسليم إشعارات البريد والرسائل.</p>
-
-//       <div className="mt-6 overflow-hidden rounded-lg border border-line bg-surface">
-//         {loading ? (
-//           <p className="p-6 text-sm text-muted">جارٍ التحميل…</p>
-//         ) : error ? (
-//           <p className="p-6 text-sm text-brick">{error}</p>
-//         ) : logs.length === 0 ? (
-//           <p className="p-6 text-sm text-muted">لا توجد سجلات بعد.</p>
-//         ) : (
-//           <table className="w-full text-left text-sm">
-//             <thead className="border-b border-line bg-paper text-xs uppercase tracking-wide text-muted">
-//               <tr>
-//                 <th className="px-4 py-3 font-medium">القناة</th>
-//                 <th className="px-4 py-3 font-medium">المستلم</th>
-//                 <th className="px-4 py-3 font-medium">الحالة</th>
-//                 <th className="px-4 py-3 font-medium">التاريخ</th>
-//               </tr>
-//             </thead>
-//             <tbody>
-//               {logs.map((log) => (
-//                 <tr key={log.id} className="border-b border-line last:border-0">
-//                   <td className="px-4 py-3 text-ink">{log.channel ?? "—"}</td>
-//                   <td className="px-4 py-3 text-muted">{log.recipient ?? "—"}</td>
-//                   <td className="px-4 py-3 text-muted">{log.status ?? "—"}</td>
-//                   <td className="px-4 py-3 text-muted">
-//                     {log.created_at ? new Date(log.created_at).toLocaleString("ar") : "—"}
-//                   </td>
-//                 </tr>
-//               ))}
-//             </tbody>
-//           </table>
-//         )}
-//       </div>
-//     </div>
-//   );
-// }
-
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Bell, ChevronDown, CircleAlert, Mail, MessageSquare, Smartphone, X } from "lucide-react";
+import { DataTable } from "@/components/data-table/data-table";
+import type { DataTableColumn } from "@/components/data-table/data-table-types";
 import { notificationAdminApi, ApiError } from "@/lib/api";
-import type { NotificationDeliveryLog } from "@/types/api";
 import { useLocale } from "@/lib/locale-context";
+import type { NotificationDeliveryLog, PaginationMeta } from "@/types/api";
+
+const dash = "—";
+const fmt = (value: string | null | undefined, locale: "ar" | "en") => value ? new Intl.DateTimeFormat(locale === "ar" ? "ar" : "en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)) : dash;
+const title = (log: NotificationDeliveryLog, locale: "ar" | "en") => log.user_notification?.title || log.type?.replaceAll("_", " ") || (locale === "ar" ? "إشعار النظام" : "System notification");
+function DeliveryStatus({ status, locale }: { status?: string | null; locale: "ar" | "en" }) { const names = locale === "ar" ? { sent: "مرسل", pending: "قيد الإرسال", failed: "فشل", skipped: "تم التخطي" } : { sent: "Sent", pending: "Pending", failed: "Failed", skipped: "Skipped" }; const styles: Record<string, string> = { sent: "bg-teal/10 text-teal", pending: "bg-amber/10 text-amber", failed: "bg-brick/10 text-brick", skipped: "bg-muted/10 text-muted" }; return <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${styles[status ?? ""] ?? "bg-muted/10 text-muted"}`}>{names[status as keyof typeof names] ?? status ?? dash}</span>; }
+function Channel({ channel, locale }: { channel?: string | null; locale: "ar" | "en" }) { const options: Record<string, [typeof Mail, string]> = { email: [Mail, "Email"], push: [Smartphone, "Push"], sms: [MessageSquare, "SMS"], database: [Bell, locale === "ar" ? "داخل النظام" : "In-app"] }; const [Icon, label] = options[channel ?? ""] ?? [Bell, channel ?? dash]; return <span className="inline-flex items-center gap-1.5 text-xs text-muted"><Icon className="h-3.5 w-3.5" />{label}</span>; }
 
 export default function NotificationsPage() {
-  const { t } = useLocale();
-  const [logs, setLogs] = useState<NotificationDeliveryLog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    notificationAdminApi
-      .listDeliveryLogs({ per_page: 50 })
-      .then(({ delivery_logs }) => setLogs(delivery_logs))
-      .catch((err) =>
-        setError(
-          err instanceof ApiError
-            ? err.message
-            : t("notifications.couldNotLoad"),
-        ),
-      )
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  return (
-    <div>
-      <h1 className="text-2xl font-semibold text-ink">
-        {t("notifications.title")}
-      </h1>
-      <p className="mt-1 text-sm text-muted">{t("notifications.subtitle")}</p>
-
-      <div className="mt-6 overflow-hidden rounded-lg border border-line bg-surface">
-        {loading ? (
-          <p className="p-6 text-sm text-muted">{t("common.loading")}</p>
-        ) : error ? (
-          <p className="p-6 text-sm text-brick">{error}</p>
-        ) : logs.length === 0 ? (
-          <p className="p-6 text-sm text-muted">{t("notifications.noItems")}</p>
-        ) : (
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-line bg-paper text-xs uppercase tracking-wide text-muted">
-              <tr>
-                <th className="px-4 py-3 font-medium">
-                  {t("notifications.channel")}
-                </th>
-                <th className="px-4 py-3 font-medium">
-                  {t("notifications.recipient")}
-                </th>
-                <th className="px-4 py-3 font-medium">
-                  {t("notifications.status")}
-                </th>
-                <th className="px-4 py-3 font-medium">
-                  {t("notifications.date")}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map((log) => (
-                <tr key={log.id} className="border-b border-line last:border-0">
-                  <td className="px-4 py-3 text-ink">{log.channel ?? "—"}</td>
-                  <td className="px-4 py-3 text-muted">
-                    {log.recipient ?? "—"}
-                  </td>
-                  <td className="px-4 py-3 text-muted">{log.status ?? "—"}</td>
-                  <td className="px-4 py-3 text-muted">
-                    {log.created_at
-                      ? new Date(log.created_at).toLocaleString()
-                      : "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </div>
-  );
+  const { locale, t } = useLocale(); const [logs, setLogs] = useState<NotificationDeliveryLog[]>([]); const [meta, setMeta] = useState<PaginationMeta>(); const [loading, setLoading] = useState(true); const [error, setError] = useState<string | null>(null); const [selected, setSelected] = useState<NotificationDeliveryLog | null>(null); const [filters, setFilters] = useState({ channel: "", status: "", type: "", date_from: "", date_to: "" }); const [page, setPage] = useState(1); const [perPage, setPerPage] = useState(10); const version = useRef(0);
+  const c = useMemo(() => locale === "ar" ? { notification: "الإشعار", complaint: "الشكوى", delivery: "التسليم", time: "وقت التسليم", actions: "الإجراءات", view: "عرض التفاصيل", filters: "الفلاتر", reset: "إعادة الضبط", all: "الكل", type: "النوع", from: "من", to: "إلى", recipient: "المستلم", channel: "القناة", status: "الحالة", previous: "السابق", next: "التالي", rows: "صفوف", showing: (from: number, to: number, total: number) => `${from}–${to} من ${total}`, empty: "لا توجد سجلات تطابق الفلاتر المحددة.", details: "تفاصيل سجل الإشعار", technical: "تفاصيل تقنية", open: "فتح الشكوى", provider: "المزوّد", providerId: "معرّف رسالة المزوّد", failure: "معلومات الفشل", close: "إغلاق" } : { notification: "Notification", complaint: "Related complaint", delivery: "Delivery", time: "Delivery time", actions: "Actions", view: "View details", filters: "Filters", reset: "Reset", all: "All", type: "Type", from: "From", to: "To", recipient: "Recipient", channel: "Channel", status: "Status", previous: "Previous", next: "Next", rows: "Rows", showing: (from: number, to: number, total: number) => `${from}–${to} of ${total}`, empty: "No notification logs match the selected filters.", details: "Notification delivery details", technical: "Technical details", open: "Open complaint", provider: "Provider", providerId: "Provider message ID", failure: "Failure information", close: "Close" }, [locale]);
+  const load = async () => { const request = ++version.current; setLoading(true); setError(null); try { const result = await notificationAdminApi.listDeliveryLogs({ page, per_page: perPage, ...filters }); if (request === version.current) { setLogs(result.delivery_logs); setMeta(result.meta); } } catch (err) { if (request === version.current) setError(err instanceof ApiError ? t("notifications.couldNotLoad") : t("notifications.couldNotLoad")); } finally { if (request === version.current) setLoading(false); } };
+  useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); // request version prevents a stale response from taking over
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, perPage, filters]);
+  const setFilter = (key: keyof typeof filters, value: string) => { setFilters((current) => ({ ...current, [key]: value })); setPage(1); };
+  const reset = () => { setFilters({ channel: "", status: "", type: "", date_from: "", date_to: "" }); setPage(1); };
+  const columns = useMemo<DataTableColumn<NotificationDeliveryLog>[]>(() => [
+    { id: "notification", header: c.notification, cell: (log) => <div className="min-w-44"><p className="truncate font-medium text-ink">{title(log, locale)}</p><p className="truncate text-xs text-muted">{log.type?.replaceAll("_", " ") ?? dash}</p></div> },
+    { id: "recipient", header: c.recipient, cell: (log) => <div className="min-w-36"><p className="truncate text-ink">{log.user?.name ?? log.recipient ?? dash}</p><p className="truncate text-xs text-muted">{log.user?.email ?? ""}</p></div>, hideOnMobile: true },
+    { id: "complaint", header: c.complaint, cell: (log) => log.complaint ? <Link href={`/complaint-workspace/${log.complaint.id}`} className="block max-w-52 hover:text-teal hover:underline"><span className="block font-medium text-ink">{log.complaint.complaint_number}</span><span className="block truncate text-xs text-muted">{log.complaint.title}</span></Link> : <span className="text-muted">{dash}</span>, hideOnMobile: true },
+    { id: "channel", header: c.channel, cell: (log) => <Channel channel={log.channel} locale={locale} />, hideOnMobile: true },
+    { id: "status", header: c.status, cell: (log) => <DeliveryStatus status={log.status} locale={locale} /> },
+    { id: "time", header: c.time, cell: (log) => <span className="whitespace-nowrap text-xs text-muted">{fmt(log.sent_at ?? log.failed_at ?? log.created_at, locale)}</span>, hideOnMobile: true },
+    { id: "actions", header: c.actions, cell: (log) => <button type="button" aria-label={`${c.view}: ${title(log, locale)}`} onClick={() => setSelected(log)} className="inline-flex h-8 items-center gap-1 rounded-md border border-line px-2 text-xs font-medium text-ink hover:bg-paper"><ChevronDown className="h-3.5 w-3.5" />{c.view}</button> },
+  ], [c, locale]);
+  return <div className="min-w-0"><div><h1 className="text-2xl font-semibold text-ink">{t("notifications.title")}</h1><p className="mt-1 text-sm text-muted">{t("notifications.subtitle")}</p></div><section className="mt-5 rounded-xl border border-line bg-surface p-4"><div className="mb-3 flex items-center justify-between"><h2 className="text-sm font-semibold text-ink">{c.filters}</h2><button type="button" onClick={reset} className="text-xs font-medium text-teal hover:underline">{c.reset}</button></div><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5"><select value={filters.channel} onChange={(e) => setFilter("channel", e.target.value)} aria-label={c.channel} className="rounded-lg border border-line bg-white px-3 py-2 text-sm"><option value="">{c.channel}: {c.all}</option>{["database", "email", "push", "sms"].map((value) => <option key={value} value={value}>{value}</option>)}</select><select value={filters.status} onChange={(e) => setFilter("status", e.target.value)} aria-label={c.status} className="rounded-lg border border-line bg-white px-3 py-2 text-sm"><option value="">{c.status}: {c.all}</option>{["pending", "sent", "failed", "skipped"].map((value) => <option key={value} value={value}>{value}</option>)}</select><input value={filters.type} onChange={(e) => setFilter("type", e.target.value)} aria-label={c.type} placeholder={c.type} className="rounded-lg border border-line bg-white px-3 py-2 text-sm" /><input type="date" value={filters.date_from} onChange={(e) => setFilter("date_from", e.target.value)} aria-label={c.from} className="rounded-lg border border-line bg-white px-3 py-2 text-sm" /><input type="date" value={filters.date_to} onChange={(e) => setFilter("date_to", e.target.value)} aria-label={c.to} className="rounded-lg border border-line bg-white px-3 py-2 text-sm" /></div></section><div className="mt-5"><DataTable columns={columns} rows={logs} getRowId={(log) => log.id} loading={loading} error={error} onRetry={() => void load()} onReset={reset} meta={meta} onPageChange={setPage} onPerPageChange={(value) => { setPerPage(value); setPage(1); }} labels={{ empty: c.empty, reset: c.reset, previous: c.previous, next: c.next, rowsPerPage: c.rows, showing: c.showing, pagination: `${c.previous}/${c.next}` }} /></div>{selected && <Details log={selected} locale={locale} c={c} onClose={() => setSelected(null)} />}</div>;
 }
+function Details({ log, locale, c, onClose }: { log: NotificationDeliveryLog; locale: "ar" | "en"; c: Record<string, string | ((from: number, to: number, total: number) => string)>; onClose: () => void }) { useEffect(() => { const close = (event: KeyboardEvent) => event.key === "Escape" && onClose(); window.addEventListener("keydown", close); return () => window.removeEventListener("keydown", close); }, [onClose]); const label = (key: string) => c[key] as string; return <div role="presentation" onMouseDown={onClose} className="fixed inset-0 z-50 flex justify-end bg-ink/35"><aside role="dialog" aria-modal="true" aria-label={label("details")} onMouseDown={(event) => event.stopPropagation()} className="h-full w-full max-w-md overflow-y-auto bg-surface p-5 shadow-2xl"><div className="flex items-start justify-between gap-4"><div><p className="text-xs text-muted">{label("details")}</p><h2 className="mt-1 text-xl font-semibold text-ink">{title(log, locale)}</h2></div><button autoFocus type="button" onClick={onClose} aria-label={label("close")} className="rounded-lg p-2 hover:bg-paper"><X className="h-5 w-5" /></button></div><Info label={label("recipient")} value={log.user?.name ?? log.recipient ?? dash} secondary={log.user?.email ?? undefined} /><Info label={label("delivery")} value={<><DeliveryStatus status={log.status} locale={locale} /><span className="ms-2"><Channel channel={log.channel} locale={locale} /></span></>} secondary={fmt(log.sent_at ?? log.failed_at ?? log.created_at, locale)} />{log.complaint && <div className="mt-5 rounded-lg bg-paper p-4"><p className="text-xs font-medium text-muted">{label("complaint")}</p><p className="mt-1 font-medium text-ink">{log.complaint.complaint_number}</p><p className="mt-1 text-sm text-muted">{log.complaint.title}</p><Link href={`/complaint-workspace/${log.complaint.id}`} className="mt-3 inline-flex text-sm font-medium text-teal hover:underline">{label("open")}</Link></div>}{log.status === "failed" && log.error_message && <div className="mt-5 rounded-lg border border-brick/20 bg-brick/5 p-4"><p className="flex items-center gap-2 text-xs font-medium text-brick"><CircleAlert className="h-4 w-4" />{label("failure")}</p><p className="mt-2 text-sm text-ink">{log.error_message}</p></div>}<details className="mt-5 rounded-lg border border-line p-4"><summary className="cursor-pointer text-sm font-medium text-ink">{label("technical")}</summary><dl className="mt-3 space-y-3 text-sm"><div><dt className="text-xs text-muted">{label("provider")}</dt><dd className="mt-1 break-all text-ink">{log.provider ?? dash}</dd></div><div><dt className="text-xs text-muted">{label("providerId")}</dt><dd className="mt-1 break-all text-ink">{log.provider_message_id ?? dash}</dd></div></dl></details></aside></div>; }
+function Info({ label, value, secondary }: { label: string; value: ReactNode; secondary?: string }) { return <div className="mt-5 border-b border-line pb-4"><p className="text-xs font-medium text-muted">{label}</p><div className="mt-1 text-sm text-ink">{value}</div>{secondary && <p className="mt-1 text-xs text-muted">{secondary}</p>}</div>; }

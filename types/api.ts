@@ -275,11 +275,21 @@ export interface ClassificationPreviewResult {
 
 export interface NotificationDeliveryLog {
   id: string | number;
-  channel?: string;
-  status?: string;
-  recipient?: string;
-  created_at?: string;
-  [key: string]: unknown;
+  channel?: "database" | "email" | "push" | "sms" | string | null;
+  type?: string | null;
+  recipient?: string | null;
+  status?: "pending" | "sent" | "failed" | "skipped" | string | null;
+  provider?: string | null;
+  provider_message_id?: string | null;
+  error_message?: string | null;
+  payload?: unknown;
+  sent_at?: string | null;
+  failed_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  user?: Pick<User, "id" | "name" | "email" | "role"> | null;
+  complaint?: Pick<Complaint, "id" | "complaint_number" | "title" | "status"> | null;
+  user_notification?: { id: string | number; title?: string | null; body?: string | null; type?: string | null } | null;
 }
 
 export interface ReportOverview {

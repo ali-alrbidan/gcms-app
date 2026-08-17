@@ -210,7 +210,7 @@
 
 import { useEffect, useState } from "react";
 import { adminDepartmentsApi, ApiError } from "@/lib/api";
-import type { Department } from "@/types/api";
+import type { Department, PaginationMeta } from "@/types/api";
 import { Modal } from "@/components/modal";
 import {
   FormField,
@@ -220,6 +220,7 @@ import {
   dangerButtonClass,
 } from "@/components/form-field";
 import { useLocale } from "@/lib/locale-context";
+import { SharedListPagination, pageAfterDelete } from "@/components/data-table/shared-list-pagination";
 
 type FormState = {
   name: string;
@@ -240,6 +241,7 @@ export default function DepartmentsPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1); const [perPage, setPerPage] = useState(10); const [meta, setMeta] = useState<PaginationMeta>();
 
   const [editing, setEditing] = useState<Department | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -251,8 +253,9 @@ export default function DepartmentsPage() {
     setLoading(true);
     setError(null);
     try {
-      const { departments } = await adminDepartmentsApi.list({ per_page: 50 });
+      const { departments, meta } = await adminDepartmentsApi.list({ per_page: perPage, page });
       setDepartments(departments);
+      setMeta(meta);
     } catch (err) {
       setError(
         err instanceof ApiError ? err.message : t("departments.couldNotLoad"),
@@ -263,8 +266,10 @@ export default function DepartmentsPage() {
   }
 
   useEffect(() => {
-    load();
-  }, []);
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, perPage]);
 
   function openCreate() {
     setEditing(null);
@@ -311,7 +316,7 @@ export default function DepartmentsPage() {
     if (!confirm(confirmMsg)) return;
     try {
       await adminDepartmentsApi.remove(dept.id);
-      await load();
+      const previousPage = pageAfterDelete(meta, departments.length); if (previousPage) setPage(previousPage); else await load();
     } catch (err) {
       alert(
         err instanceof ApiError ? err.message : t("departments.couldNotDelete"),
@@ -399,6 +404,7 @@ export default function DepartmentsPage() {
           </table>
         )}
       </div>
+      <SharedListPagination meta={meta} onPageChange={setPage} onPerPageChange={(value) => { setPerPage(value); setPage(1); }} />
 
       {showForm && (
         <Modal

@@ -282,7 +282,7 @@
 
 import { useEffect, useState } from "react";
 import { adminSlaRulesApi, lookupsApi, ApiError } from "@/lib/api";
-import type { SlaRule, Department, Category, Priority } from "@/types/api";
+import type { SlaRule, Department, Category, Priority, PaginationMeta } from "@/types/api";
 import { Modal } from "@/components/modal";
 import {
   FormField,
@@ -292,6 +292,7 @@ import {
   dangerButtonClass,
 } from "@/components/form-field";
 import { useLocale } from "@/lib/locale-context";
+import { SharedListPagination, pageAfterDelete } from "@/components/data-table/shared-list-pagination";
 
 type FormState = {
   department_id: string;
@@ -319,6 +320,7 @@ export default function SlaRulesPage() {
   const [priorities, setPriorities] = useState<Priority[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1); const [perPage, setPerPage] = useState(10); const [meta, setMeta] = useState<PaginationMeta>();
 
   const [editing, setEditing] = useState<SlaRule | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -330,14 +332,15 @@ export default function SlaRulesPage() {
     setLoading(true);
     setError(null);
     try {
-      const [{ sla_rules }, { departments }, { categories }, { priorities }] =
+      const [{ sla_rules, meta }, { departments }, { categories }, { priorities }] =
         await Promise.all([
-          adminSlaRulesApi.list({ per_page: 50 }),
+          adminSlaRulesApi.list({ per_page: perPage, page }),
           lookupsApi.departments(),
           lookupsApi.categories(),
           lookupsApi.priorities(),
         ]);
       setRules(sla_rules);
+      setMeta(meta);
       setDepartments(departments);
       setCategories(categories);
       setPriorities(priorities);
@@ -351,8 +354,10 @@ export default function SlaRulesPage() {
   }
 
   useEffect(() => {
-    load();
-  }, []);
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, perPage]);
 
   function openCreate() {
     setEditing(null);
@@ -408,7 +413,7 @@ export default function SlaRulesPage() {
     if (!confirm(t("slaRules.confirmDelete"))) return;
     try {
       await adminSlaRulesApi.remove(rule.id);
-      await load();
+      const previousPage = pageAfterDelete(meta, rules.length); if (previousPage) setPage(previousPage); else await load();
     } catch (err) {
       alert(
         err instanceof ApiError ? err.message : t("slaRules.couldNotDelete"),
@@ -500,6 +505,7 @@ export default function SlaRulesPage() {
           </table>
         )}
       </div>
+      <SharedListPagination meta={meta} onPageChange={setPage} onPerPageChange={(value) => { setPerPage(value); setPage(1); }} />
 
       {showForm && (
         <Modal
